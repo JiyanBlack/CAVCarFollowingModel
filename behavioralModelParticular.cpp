@@ -16,14 +16,14 @@ using namespace std;
 #define Tolerancia 0.01
 #define DBL_MAX 1.7976931348623158e+308 
 
-map<int, vector<int>> leaderPlatoonMap;
-map<int, int> vehLeaderMap;
-map<int, Vehicle> idVehMap;
+map<int, vector<Vehicle *>> leaderPlatoonMap;
+
 
 class Vehicle {
 public:
-	int leader, frontVehicle;
+	int leaderId, frontVehicle;
 	A2SimVehicle * V;
+	Vehicle *leaderVehicle;
 
 	// leader state description:
 	// -1 means a leader
@@ -34,6 +34,7 @@ public:
 		V = NULL;
 		id = 0;
 		hasFollowedLeader = false;
+		leaderVehicle = NULL;
 	}
 
 
@@ -41,35 +42,18 @@ public:
 		V = A2SV;
 		id = A2SV->getId();
 		hasFollowedLeader = false;
+		leaderVehicle = NULL;
 	}
 
-	void removeVehicle() {
-		if (leaderPlatoonMap.count(id) > 0) {
-			// disassemble the platoon
-			removePlatoon(id);
-		}
-		idVehMap.erase(id);
-		vehLeaderMap.erase(id);
+	void changeLeaderId(int targetId) {
+		::setLeaderState(V, targetId);
+		leaderId = targetId;
 	}
 
-	void updateLeader() {
-		A2SimVehicle * curLeader = V;
-		double shift;
-		int curLeaderId = id;
-
-		while (curLeader->getRealLeader(shift) != NULL) {
-			curLeader = curLeader->getRealLeader(shift);
-			curLeaderId = vehLeaderMap[curLeader->getId()];
-			if (curLeaderId > 0 ) {
-				leader = curLeaderId;
-				::setLeaderState(V, leader);
-				return;
-			}
-		}
-
-		::setLeaderState(curLeader, -1);
-		vehLeaderMap[curLeaderId, -1];
-		leader = -1;
+	void resetLeaderState() {
+		::setLeaderState(V, 0);
+		leaderId = 0;
+		hasFollowedLeader = false;
 	}
 
 	bool evaluateCarFollowing(double& newpos, double& newspeed, double& simStep) {
@@ -81,23 +65,23 @@ public:
 
 		// update hasFollowedLeader:
 		// if speed > 0 and has a leader id != 0, means it is a leader or following a leader:
-		if (speed > 0 && leader != 0)
+		if (speed > 0 && leaderId != 0)
 			hasFollowedLeader = true;
 
 		// decide if remove platoon
 		// if vehicle was a leader once and now it stopped again, disassemble the platoon
-		if (speed == 0 && leader == -1 && hasFollowedLeader) {
+		if (speed == 0 && leaderId == -1 && hasFollowedLeader) {
 			removePlatoon(id);
 		}
 
 		// decide if update leader
 		// if the vehicle has never followed a vehicle (speed = 0 & do not have a leader), find a leader
 		// if the vehicle has followed other vehicle once but now is stopped again, find a leader
-		bool shouldFindLeader = (speed == 0.0 && (leader == 0 || hasFollowedLeader));
+		bool shouldFindLeader = (speed == 0.0 && (leaderId == 0 || hasFollowedLeader));
 		if (shouldFindLeader) { // when stopped, update the leader state
-			updateLeader();
-			if (leader > 0) {
-				leaderPlatoonMap[leader].push_back(id);
+			updateLeader(this);
+			if (leaderId > 0) {
+				leaderPlatoonMap[leaderId].push_back(id);
 			}
 		}
 
@@ -109,10 +93,10 @@ public:
 		//}
 
 		// if the vehicle has a leader , then follow the acceleration
-		if (leader > 0)
+		if (leaderId > 0)
 		{
-			newspeed = leaderVehicle->getSpeed(leaderVehicle->isUpdated());
-			if (newspeed >= leaderVehicle->getSpeed(leaderVehicle->isUpdated())) {
+			newspeed = leaderVehicle->V->getSpeed(leaderVehicle->V->isUpdated());
+			if (newspeed >= leaderVehicle->V->getSpeed(leaderVehicle->V->isUpdated())) {
 				increment = newspeed * simStep;
 			}
 			else {
@@ -128,10 +112,18 @@ public:
 private:
 	int id;
 	bool hasFollowedLeader;
-
 };
 
+void removeVehicle(int id) {
+	if (leaderPlatoonMap.count(id) > 0) {
+		// disassemble the platoon
+		removePlatoon(id);
+	}
+	idVehMap.erase(id);
 
+}
+
+map<int, Vehicle *> idVehMap;
 
 
 
@@ -149,16 +141,30 @@ int getLeaderState(A2SimVehicle * vehicle) {
 
 void removePlatoon(int leaderId) {
 	vector<int> followers = leaderPlatoonMap[leaderId];
-	(*idVehMap[leaderId]).hasFollowedLeader = false;
+	idVehMap[leaderId]->resetLeaderState();
 	for (vector<int>::const_iterator curid = followers.begin(); curid != followers.end(); ++curid) {
-		idVehMap[*curid]->setLeaderState(0);
-		(*idVehMap[*curid]).hasFollowedLeader = false;
+		idVehMap[*curid]->resetLeaderState();
 	}
-	map<int, vector<int>>::iterator iter = leaderPlatoonMap.find(leaderId);
-	if (iter != leaderPlatoonMap.end())
-		leaderPlatoonMap.erase(iter);
+	leaderPlatoonMap.erase(leaderId);
 }
 
+void updateLeader(Vehicle * veh) {
+	A2SimVehicle * curVeh = veh->V;
+	double shift;
+	int curLeaderId = curVeh->getId();
+
+	while (curVeh->getRealLeader(shift) != NULL) {
+		curVeh = curVeh->getRealLeader(shift);
+		curLeaderId = vehLeaderMap[curVeh->getId()];
+		if (curLeaderId > 0) {
+			veh->changeLeaderId(curLeaderId);
+			veh->leaderVehicle = idVehMap[curVeh->getId()]->leaderVehicle;
+			return;
+		}
+	}
+
+	veh->changeLeaderId(-1);
+}
 
 double getRandNum() {
 	int curNum = rand() % 100;
@@ -192,7 +198,7 @@ void behavioralModelParticular::removedVehicle( void *handlerVehicle, unsigned s
 {
 	int idveh = a2simVeh->getId();
 	// remove the vehicle from the id-vehicle map
-	idVehMap[idveh]->removeVehicle();
+	removeVehicle(idveh);
 }
 
 
