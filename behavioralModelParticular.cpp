@@ -20,9 +20,11 @@ map<int, vector<int>> leaderPlatoonMap;
 
 
 class Vehicle {
+private:
+	int id;
+
 public:
 	int leaderId, frontVehicleId;
-	int id;
 	A2SimVehicle * A2V;
 	Vehicle *leaderVehicle;
 	bool hasFollowedLeader;
@@ -67,6 +69,10 @@ public:
 		setLeaderState(0);
 		leaderId = 0;
 		hasFollowedLeader = false;
+	}
+
+	int getId() {
+		return id;
 	}
 };
 
@@ -149,13 +155,12 @@ bool evaluateCarFollow(double& newpos, double& newspeed, double& simStep, A2SimV
 	double curPosition = A2V->getPosition(A2V->isUpdated());
 	int leaderId = V->leaderId;
 	bool hasFollowedLeader = V->hasFollowedLeader;
-	int id = V->id;
+	int id = V->getId();
 	Vehicle * leaderVehicle = V->leaderVehicle;
 	// update hasFollowedLeader:
 	// if speed > 0 and has a leader id != 0, means it is a leader or following a leader:
 	if (speed > 0 && V->leaderId != 0)
 		V->hasFollowedLeader = true;
-
 
 	// decide if remove platoon
 	// if vehicle was a leader once and now it stopped again, disassemble the platoon
@@ -197,11 +202,6 @@ bool evaluateCarFollow(double& newpos, double& newspeed, double& simStep, A2SimV
 	// else use the default value
 	return false;
 }
-
-
-
-
-
 
 behavioralModelParticular::behavioralModelParticular(): A2BehavioralModel()
 {
