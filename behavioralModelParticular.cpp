@@ -190,7 +190,7 @@ bool evaluateCarFollow(double& newpos, double& newspeed, double& simStep, A2SimV
 	if (leaderId > 0 && leaderVehicle->A2V != NULL)
 	{
 		newspeed = leaderVehicle->A2V->getSpeed(leaderVehicle->A2V->isUpdated());
-		if (newspeed >= leaderVehicle->A2V->getSpeed(leaderVehicle->A2V->isUpdated())) {
+		if (newspeed >= A2V->getSpeed(A2V->isUpdated())) {
 			increment = newspeed * simStep;
 		}
 		else {
