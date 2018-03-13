@@ -189,7 +189,7 @@ bool evaluateCarFollow(double& newpos, double& newspeed, double& simStep, A2SimV
 	// if the vehicle has a leader , then follow the acceleration
 	if (leaderId > 0 && leaderVehicle->A2V != NULL)
 	{
-		newspeed = leaderVehicle->A2V->getSpeed(leaderVehicle->A2V->isUpdated());
+		newspeed = leaderVehicle->A2V->getSpeed(leaderVehicle->A2V->isUpdated()); // leaderVehicle->A2V->isUpdated() or 0
 		if (newspeed >= A2V->getSpeed(A2V->isUpdated())) {
 			increment = newspeed * simStep;
 		}
