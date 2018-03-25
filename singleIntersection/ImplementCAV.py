@@ -36,21 +36,18 @@ def AAPIEnterVehicle(idVeh, idsection):
     parameters = AKIVehTrackedGetStaticInf(idVeh)
 
     parameters.reactionTime = AKIGetSimulationStepTime()
-    parameters.sensitivityFactor = 0.0  # To avoid car-following constraining the speed
-    parameters.minDistanceVeh = 0.0
+    # parameters.sensitivityFactor = 0.0  # To avoid car-following constraining the speed
+    parameters.minDistanceVeh = 2.0
     parameters.headwayMin = 0.0
-    parameters.maxDesiredSpeed = 80
-    parameters.maxAcceleration = 3.0
+    parameters.maxAcceleration = 2.0
     parameters.normalDeceleration = -3.0
-    parameters.maxDeceleration = -5.0
+    parameters.maxDeceleration = -3.0
 
     res = AKIVehTrackedSetStaticInf(idVeh, parameters)
-    if res != 0:
-        aprint(str(idVeh) + " failed to setup!")
     return 0
 
 
-def AAPIExitVehicle(idveh, idsection):
+def AAPIExitVehicle(idVeh, idsection):
     AKIVehSetAsNoTracked(idVeh)
     return 0
 
