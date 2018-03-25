@@ -91,12 +91,23 @@ bool isInNode(A2SimVehicle * Veh) {
 	return Veh->isCurrentLaneInNode();
 }
 
+double isStopped(A2SimVehicle * Veh) {
+	return Veh->getSpeed(Veh->isUpdated()) == 0.0;
+}
+
+bool isLeaderTrafficLight(A2SimVehicle * Veh) {
+	double lshift;
+	A2SimVehicle * Lveh = Veh->getLeader(lshift);
+	return  Lveh->isTrafficLight();
+}
+
+
 
 double get_distance_to_leader(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
 	// get the real distance between Veh and Lveh (front bumper to front bumper, or rear bumper to rear bumper)
 	// double r = Lveh->getPosition(Lveh->isUpdated()) - Veh->getPosition(Veh->isUpdated()) - Lveh->getLength();
 	double r = - Veh->getPositionReferenceVeh(Veh->isUpdated(), Lveh , Lveh->isUpdated()) - Lveh->getLength();
-	if (Veh->getSpeed(Veh->isUpdated()) == 0.0) print("==============" + to_string(r));
+	if (isStopped(Veh)) print("==============" + to_string(r));
 	return r;
 }
 
@@ -129,52 +140,53 @@ double get_acc_from_Lveh(A2SimVehicle * Veh, A2SimVehicle * Lveh) { // calculate
 
 
 
-double get_acc(A2SimVehicle * vehicle) {
-	A2SimVehicle * Lveh = getRealLeader(vehicle);
+double get_acc(A2SimVehicle * vehicle, A2SimVehicle * Lveh) {
 	int id = vehicle->getId();
 	if (vehToLeader[id] == NULL) {
 		return get_acc_from_Lveh(vehicle, Lveh);
 	}
-		return get_acc_from_Lveh(vehicle, vehToLeader[id]);
+	return get_acc_from_Lveh(vehicle, vehToLeader[id]);
 }
 
 bool behavioralModelParticular::evaluateCarFollowing(A2SimVehicle* vehicle, double& newpos, double& newspeed)
 {
-	bool state = vehicle->isUpdated();
-	bool speed = vehicle->getSpeed(state);
-	int id = vehicle->getId();
+	// ========================== section for decide weather to use new model ==============
 	A2SimVehicle * Lveh = getRealLeader(vehicle);
-	// ======================= section for changing decision maps ==============
-	if (speed == 0.0) { 
-		hasStopped[id] = true; 
+	double speed = vehicle->getSpeed(vehicle->isUpdated());
+	int id = vehicle->getId();
+	if (!hasRealLeader(vehicle) && isLeaderTrafficLight(vehicle)) {
+		setLeaderState(vehicle, -1);
+		return false;
 	}
-	if (hasRealLeader(vehicle) && speed != 0.0 && hasStopped[id]) {
+
+	// ======================= decide to use new model ==============
+	
+	if (isStopped(vehicle)) hasStopped[id] = true;
+
+	if (hasRealLeader(vehicle) && !isStopped(vehicle) && hasStopped[id]) {
 		// if has leader and it has stopped and it now start to move, set vehToLeader Map
 		vehToLeader[id] = Lveh;
 		hasStopped[id] = false;
 	}
 
 	if (isInNode(vehicle)) {
-		// if veh is in node, set is inInNode to true
+		// if veh is in node, set is hasEnterNode to true
 		hasEnterNode[id] = true;
 	}
 	else {
+		// else if veh is in section & has passed a node, reset all things
 		if (hasEnterNode[id]) {
 			vehToLeader.erase(id);
 			hasEnterNode[id] = false;
 		}
 	}
-	// ========================== section for decide weather to use my model ==============
-	if (!hasRealLeader(vehicle) && vehToLeader[id] == NULL) {
-		setLeaderState(vehicle, -1);
-		return false;
-	}
-	else {
-		setLeaderState(vehicle, 2);
-	}
-	double acc = get_acc(vehicle);
+
+	setLeaderState(vehicle, 2);	
+	double acc = get_acc(vehicle, Lveh);
 	vehidToAcc[id] = acc;
 	newspeed = vehicle->getSpeed(vehicle->isUpdated()) + acc;
+	// to make speed cannot be extreme small value: 0.000001, otherwise all vehicles cannot stop
+	if (newspeed < 0.2) newspeed = 0.0;
 	double increment = newspeed * getSimStep();
 	newpos = vehicle->getPosition(vehicle->isUpdated()) + increment;
 	print(to_string(id) + " acc is " + to_string(acc) + " , new speed is " + to_string(newspeed));
