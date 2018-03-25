@@ -74,7 +74,8 @@ bool hasLeader(A2SimVehicle * Veh) { // check if Veh has a leader or not
 
 double get_distance_to_leader(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
 
-	double r = Lveh->getPosition(Lveh->isUpdated()) - Veh->getPosition(Veh->isUpdated()) - Lveh->getLength();
+	double r = -Veh->getPositionReferenceVeh(Veh->isUpdated(), Lveh, Lveh->isUpdated()) - Lveh->getLength();
+	print( to_string(r));
 	return r;
 }
 
@@ -111,19 +112,11 @@ double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is dec
 
 bool behavioralModelParticular::evaluateCarFollowing(A2SimVehicle* vehicle, double& newpos, double& newspeed)
 {
-	
 	double acc = get_acc(vehicle);
 	int id = vehicle->getId();
-	
 	vehidToAcc[id] = acc;
 	newspeed = vehicle->getSpeed(vehicle->isUpdated()) + acc;
-	double increment = 0;
-	if (newspeed >= vehicle->getSpeed(vehicle->isUpdated())) {
-		increment = newspeed * getSimStep();
-	}
-	else {
-		increment = 0.5*(newspeed + vehicle->getSpeed(vehicle->isUpdated()))*getSimStep();
-	}
+	double increment = newspeed * getSimStep();
 	newpos = vehicle->getPosition(vehicle->isUpdated()) + increment;
 	print(to_string(id) + " acc is " + to_string(acc) + " , new speed is " + to_string(newspeed));
 	return true;
