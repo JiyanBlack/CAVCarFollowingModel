@@ -21,12 +21,14 @@ using namespace std;
 // new leader in the traffic intersection, so there's a lag when veh crossing the intersection
 // try to take Vehicle class into this model.
 
-double k = 0.3; // constant-speed error factor
-double ka = 1.0; // constant factor in eq3, original value 1.0
-double kv = 0.58; //constant factor in eq3, original value 0.58
-double kd = 0.1; // constant factor in eq3, paper's value 0.1
-double tsys = 0.5; // system response time setting for autonomous vehicles in eq6
-double rmin = 2.0; // minimum allowed distance 2 meters in eq4
+const double min_moving_speed = 0.1; // speed < 0.1 m/s is considered stopped.
+
+const double k = 0.3; // constant-speed error factor
+const double ka = 1.0; // constant factor in eq3, original value 1.0
+const double kv = 0.58; //constant factor in eq3, original value 0.58
+const double kd = 0.1; // constant factor in eq3, paper's value 0.1
+const double tsys = 0.5; // system response time setting for autonomous vehicles in eq6
+const double rmin = 2.0; // minimum allowed distance 2 meters in eq4
 
 map<int, double> vehidToAcc; // map Veh to its latest acceleration (acceleration calculated by last simulation loop)
 
@@ -92,22 +94,30 @@ bool isInNode(A2SimVehicle * Veh) {
 }
 
 double isStopped(A2SimVehicle * Veh) {
-	return Veh->getSpeed(Veh->isUpdated()) == 0.0;
+	return Veh->getSpeed(Veh->isUpdated()) < min_moving_speed;
 }
 
 bool isLeaderTrafficLight(A2SimVehicle * Veh) {
-	double lshift;
-	A2SimVehicle * Lveh = Veh->getLeader(lshift);
-	return  Lveh->isTrafficLight();
+	double shift;
+	A2SimVehicle* Lveh = Veh->getLeader(shift);
+	if (Lveh != NULL && Lveh->isTrafficLight())
+		return true;
+	return false;
 }
 
+bool isLeaderFictitious(A2SimVehicle * Veh) {
+	double shift;
+	A2SimVehicle* Lveh = Veh->getLeader(shift);
+	if (Lveh != NULL && Lveh->isFictitious())
+		return true;
+	return false;
+}
 
 
 double get_distance_to_leader(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
 	// get the real distance between Veh and Lveh (front bumper to front bumper, or rear bumper to rear bumper)
 	// double r = Lveh->getPosition(Lveh->isUpdated()) - Veh->getPosition(Veh->isUpdated()) - Lveh->getLength();
 	double r = - Veh->getPositionReferenceVeh(Veh->isUpdated(), Lveh , Lveh->isUpdated()) - Lveh->getLength();
-	if (isStopped(Veh)) print("==============" + to_string(r));
 	return r;
 }
 
@@ -130,7 +140,6 @@ double get_acc_from_Lveh(A2SimVehicle * Veh, A2SimVehicle * Lveh) { // calculate
 	}
 	else {
 		aref = aref_v;
-		
 	}
 	vehMaxAcc = Veh->getAcceleration(); // Veh's max acceleration
 	vehMaxDec = Veh->getDeceleration(); // Veh's max deceleration
@@ -150,16 +159,13 @@ double get_acc(A2SimVehicle * vehicle, A2SimVehicle * Lveh) {
 
 bool behavioralModelParticular::evaluateCarFollowing(A2SimVehicle* vehicle, double& newpos, double& newspeed)
 {
-	// ========================== section for decide weather to use new model ==============
+
 	A2SimVehicle * Lveh = getRealLeader(vehicle);
 	double speed = vehicle->getSpeed(vehicle->isUpdated());
 	int id = vehicle->getId();
-	if (!hasRealLeader(vehicle) && isLeaderTrafficLight(vehicle)) {
-		setLeaderState(vehicle, -1);
-		return false;
-	}
 
-	// ======================= decide to use new model ==============
+
+	// ======================= update conditions ==============
 	
 	if (isStopped(vehicle)) hasStopped[id] = true;
 
@@ -181,12 +187,21 @@ bool behavioralModelParticular::evaluateCarFollowing(A2SimVehicle* vehicle, doub
 		}
 	}
 
+	// ========================== section for decide weather to use new model ==============
+	
+	if (isLeaderTrafficLight(vehicle) || (isLeaderFictitious(vehicle) && vehToLeader[id] == NULL)) {
+		setLeaderState(vehicle, -1);
+		return false;
+	}
+
+	// ======================= use new model ==========================
+
 	setLeaderState(vehicle, 2);	
 	double acc = get_acc(vehicle, Lveh);
 	vehidToAcc[id] = acc;
 	newspeed = vehicle->getSpeed(vehicle->isUpdated()) + acc;
 	// to make speed cannot be extreme small value: 0.000001, otherwise all vehicles cannot stop
-	if (newspeed < 0.2) newspeed = 0.0;
+	if (newspeed < min_moving_speed) newspeed = 0.0;
 	double increment = newspeed * getSimStep();
 	newpos = vehicle->getPosition(vehicle->isUpdated()) + increment;
 	print(to_string(id) + " acc is " + to_string(acc) + " , new speed is " + to_string(newspeed));
