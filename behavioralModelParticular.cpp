@@ -216,7 +216,7 @@ bool behavioralModelParticular::isVehicleGivingWay(A2SimVehicle *vehicleGiveWay,
 
 // spain : vel = speed, actual = current, Deseada = desired, Resto = rest / remainder, Ciclo = Cycle
 
-double behavioralModelParticular::computeCarFollowingAccelerationComponentSpeed(A2SimVehicle *vehicle,double VelActual,double VelDeseada, double RestoCiclo)
+double behavioralModelParticular::computeCarFollowingAccelerationComponentSpeed(A2SimVehicle *vehicle,double speed,double desiredSpeed, double simStep)
 {
 	return -1;
 }
