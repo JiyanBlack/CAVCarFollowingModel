@@ -31,13 +31,13 @@ double rmin = 2.0; // minimum allowed distance 2 meters in eq4
 map<int, double> vehidToAcc; // map Veh to its latest acceleration (acceleration calculated by last simulation loop)
 
 
-// sim logic:
-// a Veh find a leader vehicle (Lveh).
-// follows the vehicle, until it cross the intersection
-// force setting the leader until it cross the intersection
-// logic: once Veh's leader is stopped & start to move again, set the vehToLeader map to current leader vehicle.
-//        Veh follow according to vehToLeader map
-//        once Veh it self is entered a node before & now is in a section, reset the vehToLeader map, reset the hasEnterNode.
+							 // sim logic:
+							 // a Veh find a leader vehicle (Lveh).
+							 // follows the vehicle, until it cross the intersection
+							 // force setting the leader until it cross the intersection
+							 // logic: once Veh's leader is stopped & start to move again, set the vehToLeader map to current leader vehicle.
+							 //        Veh follow according to vehToLeader map
+							 //        once Veh it self is entered a node before & now is in a section, reset the vehToLeader map, reset the hasEnterNode.
 
 void print(string str) {
 	AKIPrintString(str.c_str());
@@ -108,8 +108,9 @@ bool isLeaderTrafficLight(A2SimVehicle * Veh) {
 double get_distance_to_leader(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
 	// get the real distance between Veh and Lveh (front bumper to front bumper, or rear bumper to rear bumper)
 	double Xup, Vup, Xdw, Vdw;
-	double r = Veh->getGap(0.0,Lveh, 2.0, Xup, Vup, Xdw, Vdw);
-	if (isStopped(Veh)) print("v2==============" + to_string(r));
+	double r = Veh->getGap(0.0, Lveh, 0.0, Xup, Vup, Xdw, Vdw, 0);
+	if (Lveh->isFictitious()) r = r + rmin;
+	// if (isStopped(Veh)) print("Gap to the leader vehicle:" + to_string(r));
 	return r;
 }
 
@@ -122,43 +123,35 @@ double get_aref_d(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
 	return ka * lacc + kv * (lv - v) + kd * (r - rref);
 }
 
-double get_acc_from_Lveh(A2SimVehicle * Veh, A2SimVehicle * Lveh) { // calculate the acceleration (if it is deceleration, it will be negative)
+double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is deceleration, it will be negative)
 	double aref, acc, aref_v, aref_d, vehMaxAcc, vehMaxDec;
+	A2SimVehicle * Lveh = getLeader(Veh);
 	aref_v = get_aref_v(Veh);
 	if (Lveh != NULL) {
 		aref_d = get_aref_d(Veh, Lveh);
 		aref = min(aref_v, aref_d);
-		
+		setLeaderState(Veh, 2);
 	}
 	else {
 		aref = aref_v;
-		
+		setLeaderState(Veh, -1);
+
 	}
 	vehMaxAcc = Veh->getAcceleration(); // Veh's max acceleration
 	vehMaxDec = Veh->getDeceleration(); // Veh's max deceleration
 	acc = max(min(aref, vehMaxAcc), vehMaxDec);
+	vehidToAcc[Veh->getId()] = acc;
 	return acc;
 }
 
 
 bool behavioralModelParticular::evaluateCarFollowing(A2SimVehicle* vehicle, double& newpos, double& newspeed)
 {
-	// ========================== section for decide weather to use new model ==============
-	A2SimVehicle * Lveh = getLeader(vehicle);
 	double speed = vehicle->getSpeed(vehicle->isUpdated());
-	int id = vehicle->getId();
-	if (Lveh == NULL) {
-		setLeaderState(vehicle, -1);
-		return false;
-	}
-
-	// ======================= decide to use new model ==============
-	setLeaderState(vehicle, 2);	
-	double acc = get_acc_from_Lveh(vehicle, Lveh);
-	vehidToAcc[id] = acc;
-	newspeed = vehicle->getSpeed(vehicle->isUpdated()) + acc;
-	double increment = newspeed * getSimStep();
-	newpos = vehicle->getPosition(vehicle->isUpdated()) + increment;
+	double acc = get_acc(vehicle);
+	double simStep = getSimStep();
+	newspeed = speed + acc * simStep;
+	newpos = vehicle->getPosition(vehicle->isUpdated()) + newspeed * simStep;
 	return true;
 }
 
@@ -167,18 +160,15 @@ double getRandNum() {
 	return (double)curNum / 100.0;
 }
 
-behavioralModelParticular::behavioralModelParticular(): A2BehavioralModel()
+behavioralModelParticular::behavioralModelParticular() : A2BehavioralModel()
 {
-   const unsigned short *randomSeedString = AKIConvertFromAsciiString( "GKReplication::randomSeedAtt" );
-   seed = ANGConnGetAttributeValueInt( ANGConnGetAttribute( randomSeedString ), ANGConnGetReplicationId() );
-   const unsigned short *param0= AKIConvertFromAsciiString( "GKExperiment::p_distance" );
-   p_distance = ANGConnGetAttributeValueDouble( ANGConnGetAttribute( param0 ),ANGConnGetExperimentId()); 
-}
- 
-behavioralModelParticular::~behavioralModelParticular(){}
 
-simVehicleParticular * behavioralModelParticular::arrivalNewVehicle( void *handlerVehicle, unsigned short idHandler, bool isFictitiousVeh){
-	simVehicleParticular * res = new simVehicleParticular( handlerVehicle, idHandler, isFictitiousVeh );
+}
+
+behavioralModelParticular::~behavioralModelParticular() {}
+
+simVehicleParticular * behavioralModelParticular::arrivalNewVehicle(void *handlerVehicle, unsigned short idHandler, bool isFictitiousVeh) {
+	simVehicleParticular * res = new simVehicleParticular(handlerVehicle, idHandler, isFictitiousVeh);
 	if (!isFictitiousVeh) {
 		res->setnewAttribute(2);
 	}
@@ -186,7 +176,7 @@ simVehicleParticular * behavioralModelParticular::arrivalNewVehicle( void *handl
 }
 
 
-void behavioralModelParticular::removedVehicle( void *handlerVehicle, unsigned short idHandler, A2SimVehicle * a2simVeh )
+void behavioralModelParticular::removedVehicle(void *handlerVehicle, unsigned short idHandler, A2SimVehicle * a2simVeh)
 {
 
 }
@@ -194,44 +184,44 @@ void behavioralModelParticular::removedVehicle( void *handlerVehicle, unsigned s
 
 
 
-bool behavioralModelParticular::evaluateLaneChanging(A2SimVehicle *vehicle,int threadId)
-{		
+bool behavioralModelParticular::evaluateLaneChanging(A2SimVehicle *vehicle, int threadId)
+{
 	return false;
 }
 
-int behavioralModelParticular::evaluateHasTime2CrossYellowState(A2SimVehicle *vehicle,double distance2StopLine)
-{		
+int behavioralModelParticular::evaluateHasTime2CrossYellowState(A2SimVehicle *vehicle, double distance2StopLine)
+{
 	return -1;
 }
 
-int behavioralModelParticular::evaluateLaneSelectionDiscretionary(A2SimVehicle *vehicle,bool LeftLanePossible,bool RightLanePossible)
+int behavioralModelParticular::evaluateLaneSelectionDiscretionary(A2SimVehicle *vehicle, bool LeftLanePossible, bool RightLanePossible)
 {
 	return -1;
 }
 
 bool behavioralModelParticular::isVehicleGivingWay(A2SimVehicle *vehicleGiveWay, A2SimVehicle *vehiclePrio, yieldInfo *givewayInfo, int &Yield)
-{	
+{
 	return false;
 }
 
 // spain : vel = speed, actual = current, Deseada = desired, Resto = rest / remainder, Ciclo = Cycle
 
-double behavioralModelParticular::computeCarFollowingAccelerationComponentSpeed(A2SimVehicle *vehicle,double VelActual,double VelDeseada, double RestoCiclo)
+double behavioralModelParticular::computeCarFollowingAccelerationComponentSpeed(A2SimVehicle *vehicle, double speed, double desiredSpeed, double simStep)
 {
 	return -1;
 }
 
-double behavioralModelParticular::computeCarFollowingDecelerationComponentSpeed (A2SimVehicle *vehicle,double Shift,A2SimVehicle *vehicleLeader,double ShiftLeader,bool controlDecelMax, bool aside,int time)
+double behavioralModelParticular::computeCarFollowingDecelerationComponentSpeed(A2SimVehicle *vehicle, double Shift, A2SimVehicle *vehicleLeader, double ShiftLeader, bool controlDecelMax, bool aside, int time)
 {
 	return -1;
 }
 
-double behavioralModelParticular::computeMinimumGap(A2SimVehicle *vehicleUp,A2SimVehicle *vehicleDown,bool ImprudentCase,bool VehicleIspVehDw, int time)
+double behavioralModelParticular::computeMinimumGap(A2SimVehicle *vehicleUp, A2SimVehicle *vehicleDown, bool ImprudentCase, bool VehicleIspVehDw, int time)
 {
 	return -1;
 }
 
-bool behavioralModelParticular::avoidCollision(A2SimVehicle *vehicle,A2SimVehicle *vehiclePre,double ShiftPre)
+bool behavioralModelParticular::avoidCollision(A2SimVehicle *vehicle, A2SimVehicle *vehiclePre, double ShiftPre)
 {
 	return false;
 }

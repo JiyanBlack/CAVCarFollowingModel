@@ -124,7 +124,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>../../lib/a2kernel8.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)CarFollowingModel.dll</OutputFile>
+      <OutputFile>C:\Program Files\TSS-Transport Simulation Systems\Aimsun 8.2\plugins\aimsun\models\CarFollowingModel.dll</OutputFile>
       <AdditionalLibraryDirectories>..\..\lib;..\..\ext\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>

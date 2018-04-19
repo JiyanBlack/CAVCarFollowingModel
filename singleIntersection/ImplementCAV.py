@@ -37,7 +37,7 @@ def AAPIEnterVehicle(idVeh, idsection):
 
     parameters.reactionTime = AKIGetSimulationStepTime()
     # parameters.sensitivityFactor = 0.0  # To avoid car-following constraining the speed
-    parameters.minDistanceVeh = 2.0
+    parameters.minDistanceVeh = 0.0
     parameters.headwayMin = 0.0
     parameters.maxAcceleration = 2.0
     parameters.normalDeceleration = -3.0
