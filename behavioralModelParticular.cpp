@@ -122,43 +122,51 @@ double get_aref_d(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
 	return ka * lacc + kv * (lv - v) + kd * (r - rref);
 }
 
-double get_acc_from_Lveh(A2SimVehicle * Veh, A2SimVehicle * Lveh) { // calculate the acceleration (if it is deceleration, it will be negative)
+double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is deceleration, it will be negative)
 	double aref, acc, aref_v, aref_d, vehMaxAcc, vehMaxDec;
+	A2SimVehicle * Lveh = getLeader(Veh);
 	aref_v = get_aref_v(Veh);
 	if (Lveh != NULL) {
 		aref_d = get_aref_d(Veh, Lveh);
 		aref = min(aref_v, aref_d);
-		
+		setLeaderState(Veh, 2);
 	}
 	else {
 		aref = aref_v;
+		setLeaderState(Veh, -1);
 		
 	}
 	vehMaxAcc = Veh->getAcceleration(); // Veh's max acceleration
 	vehMaxDec = Veh->getDeceleration(); // Veh's max deceleration
 	acc = max(min(aref, vehMaxAcc), vehMaxDec);
+	vehidToAcc[Veh->getId()] = acc;
+	return acc;
+}
+
+double get_dec(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
+	double aref, acc, aref_v, aref_d, vehMaxAcc, vehMaxDec;
+	aref_v = get_aref_v(Veh);
+
+	aref_d = get_aref_d(Veh, Lveh);
+	aref = min(aref_v, aref_d);
+	setLeaderState(Veh, 2);
+
+	vehMaxAcc = Veh->getAcceleration(); // Veh's max acceleration
+	vehMaxDec = Veh->getDeceleration(); // Veh's max deceleration
+	acc = max(min(aref, vehMaxAcc), vehMaxDec);
+	vehidToAcc[Veh->getId()] = acc;
 	return acc;
 }
 
 
 bool behavioralModelParticular::evaluateCarFollowing(A2SimVehicle* vehicle, double& newpos, double& newspeed)
 {
-	// ========================== section for decide weather to use new model ==============
-	A2SimVehicle * Lveh = getLeader(vehicle);
+	return false;
 	double speed = vehicle->getSpeed(vehicle->isUpdated());
-	int id = vehicle->getId();
-	if (Lveh == NULL) {
-		setLeaderState(vehicle, -1);
-		return false;
-	}
-
-	// ======================= decide to use new model ==============
-	setLeaderState(vehicle, 2);	
-	double acc = get_acc_from_Lveh(vehicle, Lveh);
-	vehidToAcc[id] = acc;
-	newspeed = vehicle->getSpeed(vehicle->isUpdated()) + acc;
-	double increment = newspeed * getSimStep();
-	newpos = vehicle->getPosition(vehicle->isUpdated()) + increment;
+	double acc = get_acc(vehicle);
+	double simStep = getSimStep();
+	newspeed = speed + acc * simStep;
+	newpos = vehicle->getPosition(vehicle->isUpdated()) + newspeed * simStep;
 	return true;
 }
 
@@ -218,12 +226,18 @@ bool behavioralModelParticular::isVehicleGivingWay(A2SimVehicle *vehicleGiveWay,
 
 double behavioralModelParticular::computeCarFollowingAccelerationComponentSpeed(A2SimVehicle *vehicle,double speed,double desiredSpeed, double simStep)
 {
-	return -1;
+	double acc = get_acc(vehicle);
+	double newspeed = speed + acc * simStep;
+	return newspeed;
 }
 
 double behavioralModelParticular::computeCarFollowingDecelerationComponentSpeed (A2SimVehicle *vehicle,double Shift,A2SimVehicle *vehicleLeader,double ShiftLeader,bool controlDecelMax, bool aside,int time)
 {
-	return -1;
+	double speed = vehicle->getSpeed(vehicle->isUpdated());
+	double acc = get_dec(vehicle, vehicleLeader);
+	double simStep = getSimStep();
+	double newspeed = speed + acc * simStep;
+	return newspeed;
 }
 
 double behavioralModelParticular::computeMinimumGap(A2SimVehicle *vehicleUp,A2SimVehicle *vehicleDown,bool ImprudentCase,bool VehicleIspVehDw, int time)
