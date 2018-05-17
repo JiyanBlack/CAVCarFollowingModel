@@ -7,6 +7,7 @@ def AAPILoad():
 
 
 def AAPIInit():
+    AKIPrintString("AAPIStart")
     return 0
 
 
@@ -31,19 +32,31 @@ def AAPIPreRouteChoiceCalculation(time, timeSta):
     return 0
 
 
+def setAVState(id, state):
+    GKid = ANGConnVehGetGKSimVehicleId(id)
+    ANGConnSetAttributeValueInt(
+        ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::isAV")),
+        GKid, state)
+
+
+def getAVState(id):
+    GKid = ANGConnVehGetGKSimVehicleId(id)
+    return ANGConnGetAttributeValueInt(
+        ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::isAV")),
+        GKid)
+
+
 def AAPIEnterVehicle(idVeh, idsection):
     AKIVehSetAsTracked(idVeh)
+    setAVState(idVeh, 1)
     parameters = AKIVehTrackedGetStaticInf(idVeh)
-
     parameters.reactionTime = AKIGetSimulationStepTime()
-    # parameters.sensitivityFactor = 0.0  # To avoid car-following constraining the speed
-    parameters.minDistanceVeh = 0.0
+    parameters.minDistanceVeh = 2.0
     parameters.headwayMin = 0.0
-    parameters.maxAcceleration = 2.0
+    parameters.maxAcceleration = 3.0
     parameters.normalDeceleration = -3.0
-    parameters.maxDeceleration = -3.0
-
-    res = AKIVehTrackedSetStaticInf(idVeh, parameters)
+    parameters.maxDeceleration = -3.5
+    AKIVehSetStaticInf(idVeh, parameters)
     return 0
 
 

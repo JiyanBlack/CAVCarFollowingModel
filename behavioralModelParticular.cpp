@@ -30,7 +30,6 @@ double rmin = 2.0; // minimum allowed distance 2 meters in eq4
 
 map<int, double> vehidToAcc; // map Veh to its latest acceleration (acceleration calculated by last simulation loop)
 
-
 							 // sim logic:
 							 // a Veh find a leader vehicle (Lveh).
 							 // follows the vehicle, until it cross the intersection
@@ -43,17 +42,17 @@ void print(string str) {
 	AKIPrintString(str.c_str());
 }
 
-void setLeaderState(A2SimVehicle * vehicle, int state) {
+void setAVState(A2SimVehicle * vehicle, int state) {
 	int id = vehicle->getId();
 	int GKid = ANGConnVehGetGKSimVehicleId(id);
-	ANGConnSetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::isLeader")), GKid, state);
+	ANGConnSetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::isAV")), GKid, state);
 }
 
 
-int getLeaderState(A2SimVehicle * vehicle) {
+int getAVState(A2SimVehicle * vehicle) {
 	int id = vehicle->getId();
 	int GKid = ANGConnVehGetGKSimVehicleId(id);
-	return ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::isLeader")), GKid);
+	return ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::isAV")), GKid);
 }
 
 double get_aref_v(A2SimVehicle * Veh) {
@@ -108,9 +107,8 @@ bool isLeaderTrafficLight(A2SimVehicle * Veh) {
 double get_distance_to_leader(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
 	// get the real distance between Veh and Lveh (front bumper to front bumper, or rear bumper to rear bumper)
 	double Xup, Vup, Xdw, Vdw;
-	double r = Veh->getGap(0.0, Lveh, 0.0, Xup, Vup, Xdw, Vdw, 0);
-	if (Lveh->isFictitious()) r = r + rmin;
-	// if (isStopped(Veh)) print("Gap to the leader vehicle:" + to_string(r));
+	double r = Veh->getGap(0.0, Lveh, 0.0, Xup, Vup, Xdw, Vdw, 0) + Veh->getMinimumDistanceInterVeh(Lveh);
+	if (isStopped(Veh)) print("Gap to the leader vehicle:" + to_string(r));
 	return r;
 }
 
@@ -124,18 +122,16 @@ double get_aref_d(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
 }
 
 double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is deceleration, it will be negative)
+
 	double aref, acc, aref_v, aref_d, vehMaxAcc, vehMaxDec;
 	A2SimVehicle * Lveh = getLeader(Veh);
 	aref_v = get_aref_v(Veh);
 	if (Lveh != NULL) {
 		aref_d = get_aref_d(Veh, Lveh);
 		aref = min(aref_v, aref_d);
-		setLeaderState(Veh, 2);
 	}
 	else {
 		aref = aref_v;
-		setLeaderState(Veh, -1);
-
 	}
 	vehMaxAcc = Veh->getAcceleration(); // Veh's max acceleration
 	vehMaxDec = Veh->getDeceleration(); // Veh's max deceleration
@@ -147,10 +143,16 @@ double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is dec
 
 bool behavioralModelParticular::evaluateCarFollowing(A2SimVehicle* vehicle, double& newpos, double& newspeed)
 {
+	int isAV = getAVState(vehicle);
+	if (isAV == 0) { 
+		return false; 
+	}
 	double speed = vehicle->getSpeed(vehicle->isUpdated());
 	double acc = get_acc(vehicle);
 	double simStep = getSimStep();
-	newspeed = speed + acc * simStep;
+	double avnewspeed = speed + acc * simStep;
+	if (avnewspeed < 2) return false;
+	speed = avnewspeed;
 	newpos = vehicle->getPosition(vehicle->isUpdated()) + newspeed * simStep;
 	return true;
 }
@@ -159,6 +161,7 @@ double getRandNum() {
 	int curNum = rand() % 100;
 	return (double)curNum / 100.0;
 }
+
 
 behavioralModelParticular::behavioralModelParticular() : A2BehavioralModel()
 {
