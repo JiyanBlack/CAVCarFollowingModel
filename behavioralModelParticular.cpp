@@ -104,10 +104,10 @@ double get_aref_d(A2SimVehicle * Veh, A2SimVehicle * Lveh, double r) {
 
 double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is deceleration, it will be negative)
 	double aref, acc, aref_v, aref_d, vehMaxAcc, vehMaxDec, r;
-	A2SimVehicle * Lveh = getLeader(Veh);
+	A2SimVehicle * Lveh = getRealLeader(Veh);
 	aref_v = get_aref_v(Veh);
 	if (Lveh != NULL) {
-		r = get_distance_to_leader(Veh, Lveh);
+		r = get_distance_to_leader_v2(Veh, Lveh);
 		if (r < FOLLOWTHRESHOLD) {
 			aref_d = get_aref_d(Veh, Lveh, r);
 			aref = min(aref_v, aref_d);
@@ -129,7 +129,6 @@ double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is dec
 bool behavioralModelParticular::evaluateCarFollowing(A2SimVehicle* vehicle, double& newpos, double& newspeed)
 {
 	if (vehicle == NULL) return false;
-	if (vehicle->isFictitious()) return false;
 	//int isAV = getAVState(vehicle);
 	//if (isAV == 0) {  
 	//}
