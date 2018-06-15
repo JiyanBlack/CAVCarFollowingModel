@@ -73,15 +73,21 @@ A2SimVehicle * getRealLeader(A2SimVehicle * Veh) {
 	return Lveh;
 }
 
+double getRealLeaderShift(A2SimVehicle * Veh) {
+	double lshift;
+	A2SimVehicle * Lveh = Veh->getRealLeader(lshift);
+	return lshift;
+}
+
+
 double isStopped(A2SimVehicle * Veh) {
 	return Veh->getSpeed(Veh->isUpdated()) == 0.0;
 }
 
-double get_distance_to_leader(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
+double get_distance_to_leader(A2SimVehicle * Veh, A2SimVehicle * Lveh, double shift) {
 	// get the real distance between Veh and Lveh (front bumper to front bumper, or rear bumper to rear bumper)
 	double Xup, Vup, Xdw, Vdw;
-	double r = Veh->getGap(0.0, Lveh, 0.0, Xup, Vup, Xdw, Vdw, 0) + Veh->getMinimumDistanceInterVeh(Lveh);
-	// if (isStopped(Veh)) print("Gap to the leader vehicle:" + to_string(r));
+	double r = Veh->getGap(0.0, Lveh, shift, Xup, Vup, Xdw, Vdw);
 	return r;
 }
 double get_distance_to_leader_v2(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
@@ -107,13 +113,10 @@ double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is dec
 	A2SimVehicle * Lveh = getRealLeader(Veh);
 	aref_v = get_aref_v(Veh);
 	if (Lveh != NULL) {
-		r = get_distance_to_leader_v2(Veh, Lveh);
-		if (r < FOLLOWTHRESHOLD) {
-			aref_d = get_aref_d(Veh, Lveh, r);
-			aref = min(aref_v, aref_d);
-		}else{
-			aref = aref_v;
-		}
+		double shift = getRealLeaderShift(Veh);
+		r = get_distance_to_leader(Veh, Lveh, shift);
+		aref_d = get_aref_d(Veh, Lveh, r);
+		aref = min(aref_v, aref_d);
 	}
 	else {
 		aref = aref_v;
@@ -181,7 +184,7 @@ int behavioralModelParticular::evaluateHasTime2CrossYellowState(A2SimVehicle *ve
 
 int behavioralModelParticular::evaluateLaneSelectionDiscretionary(A2SimVehicle *vehicle, bool LeftLanePossible, bool RightLanePossible)
 {
-	return -1;
+	return -10;
 }
 
 bool behavioralModelParticular::isVehicleGivingWay(A2SimVehicle *vehicleGiveWay, A2SimVehicle *vehiclePrio, yieldInfo *givewayInfo, int &Yield)
