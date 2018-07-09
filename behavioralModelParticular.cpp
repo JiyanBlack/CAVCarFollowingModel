@@ -6,7 +6,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string> 
-
 #include <vector>
 #include <map>
 #include <iostream>
@@ -26,8 +25,6 @@ double rmin = 2.0; // minimum allowed distance 2 meters in eq4
 
 map<int, double> idToAcc;
 
-const int FOLLOWTHRESHOLD = 100;
-
 void print(string str) {
 	AKIPrintString(str.c_str());
 }
@@ -35,14 +32,25 @@ void print(string str) {
 void setAVState(A2SimVehicle * vehicle, int state) {
 	int id = vehicle->getId();
 	int GKid = ANGConnVehGetGKSimVehicleId(id);
-	ANGConnSetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::isAV")), GKid, state);
+	ANGConnSetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::vehTypeState")), GKid, state);
+}
+
+void chooseVehType(A2SimVehicle * vehicle, int state) {
+	int id = vehicle->getId();
+	int GKid = ANGConnVehGetGKSimVehicleId(id);
+	int av = ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::avPer")), GKid);
+	int cav = ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::cavPer")), GKid);
+	double rand_num = getRandNum() * 100;
+	if (rand_num < cav) setAVState(vehicle, 2); // 2 means cav
+	if ( (cav <= rand_num) && (rand_num < av+cav) ) setAVState(vehicle, 1); // 1 means av
+	if (rand_num >= av+cav)  setAVState(vehicle, 0); // 0 means default vehicle
 }
 
 
 int getAVState(A2SimVehicle * vehicle) {
 	int id = vehicle->getId();
 	int GKid = ANGConnVehGetGKSimVehicleId(id);
-	return ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::isAV")), GKid);
+	return ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::vehTypeState")), GKid);
 }
 
 double get_aref_v(A2SimVehicle * Veh) {

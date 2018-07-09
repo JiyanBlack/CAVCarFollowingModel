@@ -1,8 +1,16 @@
 from AAPI import *
+import random
+
+seed = 1
+
+random.seed(seed)
+av = None
+cav = None
 
 
 def AAPILoad():
     AKIPrintString("AAPILoad")
+    getRatio()
     return 0
 
 
@@ -38,6 +46,14 @@ def setAVState(id, state):
         ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::isAV")),
         GKid, state)
 
+def getRatio():
+    global av, cav
+    with open('percent.txt', 'r') as f:
+        percent = f.read()
+        ratio = percent.split('_')
+        av = int(ratio[0])
+        cav = int(ratio[1])
+        print("Start creating vehicles with percent of av: " + str(av) + " , cav: " + str(cav))
 
 def getAVState(id):
     GKid = ANGConnVehGetGKSimVehicleId(id)
@@ -48,14 +64,20 @@ def getAVState(id):
 
 def AAPIEnterVehicle(idVeh, idsection):
     AKIVehSetAsTracked(idVeh)
-    setAVState(idVeh, 1)
+    rnd_num = random.random() * 100
+    if rnd_num < av: # set as av
+        setAVState(idVeh, 1)
+    elif rnd_num < (av+cav): # set as cav
+        setAVState(idVeh, 2)
+    else:
+        setAVState(idVeh, 0) # set as default veh
     parameters = AKIVehTrackedGetStaticInf(idVeh)
     parameters.reactionTime = AKIGetSimulationStepTime()
-    parameters.minDistanceVeh = 2.0
-    parameters.headwayMin = 0.5
-    parameters.maxAcceleration = 3.0
-    parameters.normalDeceleration = -3.5
-    parameters.maxDeceleration = -3.5
+    # parameters.minDistanceVeh = 2.0
+    # parameters.headwayMin = 0.5
+    # parameters.maxAcceleration = 3.0
+    # parameters.normalDeceleration = -3.5
+    # parameters.maxDeceleration = -3.5
     AKIVehSetStaticInf(idVeh, parameters)
     return 0
 
