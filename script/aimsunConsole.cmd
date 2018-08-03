@@ -1,1 +1,1 @@
-"C:\Program Files\TSS-Transport Simulation Systems\Aimsun 8.2\aconsole.exe" -script consoleScript.py "MitchellSB Subnet_1_v2.ang"
+"C:\Program Files\TSS-Transport Simulation Systems\Aimsun 8.2\aconsole.exe" -script consoleScript.py "D:\Codes\aimsunsimtrafficoptimization\SDK\samples\scriptSubnet\MitchellSB Subnet_1_v2.ang"

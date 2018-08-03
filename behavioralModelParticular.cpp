@@ -25,6 +25,7 @@ double rmin = 2.0; // minimum allowed distance 2 meters in eq4
 
 map<int, double> idToAcc;
 
+
 void print(string str) {
 	AKIPrintString(str.c_str());
 }
@@ -34,18 +35,6 @@ void setAVState(A2SimVehicle * vehicle, int state) {
 	int GKid = ANGConnVehGetGKSimVehicleId(id);
 	ANGConnSetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::vehTypeState")), GKid, state);
 }
-
-void chooseVehType(A2SimVehicle * vehicle, int state) {
-	int id = vehicle->getId();
-	int GKid = ANGConnVehGetGKSimVehicleId(id);
-	int av = ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::avPer")), GKid);
-	int cav = ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::cavPer")), GKid);
-	double rand_num = getRandNum() * 100;
-	if (rand_num < cav) setAVState(vehicle, 2); // 2 means cav
-	if ( (cav <= rand_num) && (rand_num < av+cav) ) setAVState(vehicle, 1); // 1 means av
-	if (rand_num >= av+cav)  setAVState(vehicle, 0); // 0 means default vehicle
-}
-
 
 int getAVState(A2SimVehicle * vehicle) {
 	int id = vehicle->getId();
@@ -69,24 +58,6 @@ double get_rref(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
 	return rref;
 }
 
-A2SimVehicle * getLeader(A2SimVehicle * Veh) {
-	double lshift;
-	A2SimVehicle * Lveh = Veh->getLeader(lshift);
-	return Lveh;
-}
-
-A2SimVehicle * getRealLeader(A2SimVehicle * Veh) {
-	double lshift;
-	A2SimVehicle * Lveh = Veh->getRealLeader(lshift);
-	return Lveh;
-}
-
-double getRealLeaderShift(A2SimVehicle * Veh) {
-	double lshift;
-	A2SimVehicle * Lveh = Veh->getRealLeader(lshift);
-	return lshift;
-}
-
 
 double isStopped(A2SimVehicle * Veh) {
 	return Veh->getSpeed(Veh->isUpdated()) == 0.0;
@@ -98,6 +69,7 @@ double get_distance_to_leader(A2SimVehicle * Veh, A2SimVehicle * Lveh, double sh
 	double r = Veh->getGap(0.0, Lveh, shift, Xup, Vup, Xdw, Vdw);
 	return r;
 }
+
 double get_distance_to_leader_v2(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
 	double dist = Lveh->getPositionReferenceVeh(Lveh->isUpdated(), Veh, Veh->isUpdated());
 	double lvehLen = Lveh->getLength();
@@ -107,7 +79,6 @@ double get_distance_to_leader_v2(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
 }
 
 double get_aref_d(A2SimVehicle * Veh, A2SimVehicle * Lveh, double r) {
-
 	double rref = get_rref(Veh, Lveh);
 	double lacc = idToAcc[Lveh->getId()];
 	double lv = Lveh->getSpeed(Lveh->isUpdated());  // Lveh's velocity
@@ -117,11 +88,11 @@ double get_aref_d(A2SimVehicle * Veh, A2SimVehicle * Lveh, double r) {
 
 
 double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is deceleration, it will be negative)
+	double shift;
+	A2SimVehicle * Lveh = Veh->getLeader(shift); // or use getRealLeader
 	double aref, acc, aref_v, aref_d, vehMaxAcc, vehMaxDec, r;
-	A2SimVehicle * Lveh = getRealLeader(Veh);
 	aref_v = get_aref_v(Veh);
 	if (Lveh != NULL) {
-		double shift = getRealLeaderShift(Veh);
 		r = get_distance_to_leader(Veh, Lveh, shift);
 		aref_d = get_aref_d(Veh, Lveh, r);
 		aref = min(aref_v, aref_d);
@@ -132,23 +103,35 @@ double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is dec
 	vehMaxAcc = Veh->getAcceleration(); // Veh's max acceleration
 	vehMaxDec = Veh->getDeceleration(); // Veh's max deceleration
 	acc = max(min(aref, vehMaxAcc), vehMaxDec);
-	idToAcc[Veh->getId()] = acc;
 	return acc;
+}
+
+void CAVCarFollowing(A2SimVehicle* vehicle, double& newpos, double& newspeed, double simStep) {
+	double speed = vehicle->getSpeed(vehicle->isUpdated());
+	double acc = get_acc(vehicle);
+	double old_acc = idToAcc[vehicle->getId()];
+	newspeed = speed + simStep / 2 * (old_acc + acc);
+	idToAcc[vehicle->getId()] = acc;
+	newpos = vehicle->getPosition(vehicle->isUpdated()) + simStep / 2 * (newspeed + speed);
 }
 
 
 bool behavioralModelParticular::evaluateCarFollowing(A2SimVehicle* vehicle, double& newpos, double& newspeed)
 {
-	if (vehicle == NULL) return false;
-	//int isAV = getAVState(vehicle);
-	//if (isAV == 0) {  
-	//}
-	double speed = vehicle->getSpeed(vehicle->isUpdated());
-	double acc = get_acc(vehicle);
+	if (vehicle == NULL || vehicle->isFictitious()) return false;
+	int vehType = getAVState(vehicle);
+	// choose vehicle type
 	double simStep = getSimStep();
-	newspeed = speed + acc * simStep;
-	newpos = vehicle->getPosition(vehicle->isUpdated()) + newspeed * simStep;
-	return true;
+	if (vehType == 0) {
+		// Default Gipps vehicle, do nothing
+	}
+	if (vehType == 1) {
+	}
+	if (vehType == 2) {
+		CAVCarFollowing(vehicle, newpos, newspeed, simStep);
+		return true;
+	}
+	return false;
 }
 
 double getRandNum() {

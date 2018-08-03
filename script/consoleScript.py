@@ -12,25 +12,28 @@ seed = 1
 
 gui_mode = False
 
+
 def addColumns():
     print "Initializing columns..."
-    gkveh = model.getType( "GKVehicle" )
-    gkveh.addColumn( "GKSimVehicle::vehTypeState", "Vehcle Type", GKColumn.Int, GKColumn.eExternal )
+    gkveh = model.getType("GKVehicle")
+    gkveh.addColumn("GKSimVehicle::vehTypeState", "Vehcle Type", GKColumn.Int,
+                    GKColumn.eExternal)
     print "Columns added!"
 
+
 def findExperiment():
-    experiments = model.getType( "GKExperiment" )
-    for types in model.getCatalog().getUsedSubTypesFromType( experiments ):
+    experiments = model.getType("GKExperiment")
+    for types in model.getCatalog().getUsedSubTypesFromType(experiments):
         for e in types.itervalues():
-            if (e.getName()=="iMove Dynamic Experiment"):
+            if (e.getName() == "iMove Mixed Traffic Experiment"):
                 print "Found target experiment."
                 return e
+
 
 def deleteAllReplications(exp):
     print "Remove all existing replicatoins..."
     for replication in exp.getReplications():
         exp.removeReplication(replication)
-
 
 
 def loadModelGui(argv):
@@ -39,27 +42,30 @@ def loadModelGui(argv):
     # Load a network
     print "load ang: " + argv[3]
     if gui.loadNetwork(argv[3]):
-        model=gui.getActiveModel()
+        model = gui.getActiveModel()
         print "network loaded!"
     else:
-        gui.showMessage( GGui.eCritical, "Open error", "Cannot load the network" )
+        gui.showMessage(GGui.eCritical, "Open error",
+                        "Cannot load the network")
+
 
 def loadModelConsole(argv):
     global model, console
-    if len( argv ) < 1:
+    if len(argv) < 1:
         print str("please specify script and ANG files")
         return -1
     # Start a Console
     console = ANGConsole()
     # Load a network
     print "Start loading network..."
-    if console.open( argv[1] ):
+    if console.open(argv[1]):
         model = console.getModel()
         print "network loaded!"
     else:
-        console.getLog().addError( "Cannot load the network" )
+        console.getLog().addError("Cannot load the network")
         print "cannot load network"
         console.close()
+
 
 def quit():
     if gui_mode:
@@ -69,30 +75,32 @@ def quit():
     else:
         console.close()
 
+
 def runReplications(exp):
-    plugin = GKSystem.getSystem().getPlugin( "GGetram" ) # GGetramModule 
-    simulator = plugin.getCreateSimulator( model ) 
-    for i in range(21):
-        av_per = i * 5
-        cav_per = 0
+    plugin = GKSystem.getSystem().getPlugin("GGetram")  # GGetramModule
+    simulator = plugin.getCreateSimulator(model)
+    for i in range(6):
+        av_per = 0
+        cav_per = 100 - i * 20
         name = str(av_per) + "_" + str(cav_per)
-        replication = GKSystem.getSystem().newObject( "GKReplication", model ) 
-        replication.setName(name) 
+        replication = GKSystem.getSystem().newObject("GKReplication", model)
+        replication.setName(name)
         replication.setRandomSeed(seed)
         exp.addReplication(replication)
         print("Create new replication: " + name)
-        simulator.addSimulationTask( GKSimulationTask(replication, GKReplication.eBatch) )
-
-        with open('percent.txt','w') as f:
+        simulator.addSimulationTask(
+            GKSimulationTask(replication, GKReplication.eBatch))
+        with open('percent.txt', 'a') as f:
             f.write(name)
         print "Simulating replication: " + replication.getName()
         simulator.simulate()
 
-def main( argv ):
+
+def main(argv):
     if gui_mode:
         loadModelGui(argv)
     else:
-        loadModelConsole(argv)        
+        loadModelConsole(argv)
     addColumns()
     exp = findExperiment()
     deleteAllReplications(exp)
@@ -100,7 +108,7 @@ def main( argv ):
     # quit()
 
 
-if len( sys.argv ) == 4:
+if len(sys.argv) == 4:
     gui_mode = True
 if gui_mode:
     main(sys.argv)

@@ -43,8 +43,10 @@ def AAPIPreRouteChoiceCalculation(time, timeSta):
 def setAVState(id, state):
     GKid = ANGConnVehGetGKSimVehicleId(id)
     ANGConnSetAttributeValueInt(
-        ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::isAV")),
-        GKid, state)
+        ANGConnGetAttribute(
+            AKIConvertFromAsciiString("GKSimVehicle::vehTypeState")), GKid,
+        state)
+
 
 def getRatio():
     global av, cav
@@ -53,30 +55,32 @@ def getRatio():
         ratio = percent.split('_')
         av = int(ratio[0])
         cav = int(ratio[1])
-        print("Start creating vehicles with percent of av: " + str(av) + " , cav: " + str(cav))
+        print("Start creating vehicles with percent of av: " + str(av) +
+              " , cav: " + str(cav))
+
 
 def getAVState(id):
     GKid = ANGConnVehGetGKSimVehicleId(id)
     return ANGConnGetAttributeValueInt(
-        ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::isAV")),
-        GKid)
+        ANGConnGetAttribute(
+            AKIConvertFromAsciiString("GKSimVehicle::vehTypeState")), GKid)
 
 
 def AAPIEnterVehicle(idVeh, idsection):
     AKIVehSetAsTracked(idVeh)
     rnd_num = random.random() * 100
-    if rnd_num < av: # set as av
+    if rnd_num < av:  # set as av
         setAVState(idVeh, 1)
-    elif rnd_num < (av+cav): # set as cav
+    elif rnd_num < (av + cav):  # set as cav
         setAVState(idVeh, 2)
     else:
-        setAVState(idVeh, 0) # set as default veh
+        setAVState(idVeh, 0)  # set as default veh
     parameters = AKIVehTrackedGetStaticInf(idVeh)
     parameters.reactionTime = AKIGetSimulationStepTime()
     parameters.minDistanceVeh = 2.0
     parameters.headwayMin = 0.5
     parameters.maxAcceleration = 1.7
-    parameters.normalDeceleration = - 2.0
+    parameters.normalDeceleration = -2.0
     parameters.maxDeceleration = -2.0
     AKIVehSetStaticInf(idVeh, parameters)
     return 0
