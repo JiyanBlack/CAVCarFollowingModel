@@ -12,6 +12,9 @@
 #include <algorithm>
 #include <iterator>
 #include <cassert>
+#include <fstream>
+#include <iostream>
+#include <valarray>
 using namespace std;
 #define Tolerancia 0.01
 #define DBL_MAX 1.7976931348623158e+308 
@@ -24,44 +27,24 @@ double tsys = 0.5; // system response time setting for autonomous vehicles in eq
 double rmin = 2.0; // minimum allowed distance 2 meters in eq4
 
 map<int, double> idToAcc;
-
+map<int, int> idToVehType;
+// void * attr = ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::vehTypeState"));
 
 void print(string str) {
 	AKIPrintString(str.c_str());
 }
 
-void setAVState(A2SimVehicle * vehicle, int state) {
-	int id = vehicle->getId();
+void setAVState(int id, int state) {
 	int GKid = ANGConnVehGetGKSimVehicleId(id);
 	ANGConnSetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::vehTypeState")), GKid, state);
 }
 
-int getAVState(A2SimVehicle * vehicle) {
-	int id = vehicle->getId();
+int getAVState(int id) {
 	int GKid = ANGConnVehGetGKSimVehicleId(id);
-	return ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::vehTypeState")), GKid);
+	int state = ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::vehTypeState")), GKid);
+	return state;
 }
 
-double get_aref_v(A2SimVehicle * Veh) {
-	// Veh is the vehicle that about to update speed & position
-	double v_intend = Veh->getFreeFlowSpeed();
-	double v = Veh->getSpeed(Veh->isUpdated());
-	return k * (v_intend - v);
-}
-
-double get_rref(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
-	// Lveh is the leader vehicle of Veh.
-	double v = Veh->getSpeed(Veh->isUpdated());
-	double rsafe = pow(v, 2) / 2 * (1.0 / (-Lveh->getDeceleration()) - 1.0 / (-Veh->getDeceleration()));
-	double rsys = tsys * v;
-	double rref = max(rsafe, max(rsys, rmin));
-	return rref;
-}
-
-
-double isStopped(A2SimVehicle * Veh) {
-	return Veh->getSpeed(Veh->isUpdated()) == 0.0;
-}
 
 double get_distance_to_leader(A2SimVehicle * Veh, A2SimVehicle * Lveh, double shift) {
 	// get the real distance between Veh and Lveh (front bumper to front bumper, or rear bumper to rear bumper)
@@ -70,31 +53,24 @@ double get_distance_to_leader(A2SimVehicle * Veh, A2SimVehicle * Lveh, double sh
 	return r;
 }
 
-double get_distance_to_leader_v2(A2SimVehicle * Veh, A2SimVehicle * Lveh) {
-	double dist = Lveh->getPositionReferenceVeh(Lveh->isUpdated(), Veh, Veh->isUpdated());
-	double lvehLen = Lveh->getLength();
-	double r = dist - lvehLen;
-	// if (isStopped(Veh)) print("GapV2 to the leader vehicle:" + to_string(r) + "  " + to_string(lvehLen));
-	return r;
-}
-
-double get_aref_d(A2SimVehicle * Veh, A2SimVehicle * Lveh, double r) {
-	double rref = get_rref(Veh, Lveh);
-	double lacc = idToAcc[Lveh->getId()];
-	double lv = Lveh->getSpeed(Lveh->isUpdated());  // Lveh's velocity
-	double v = Veh->getSpeed(Veh->isUpdated()); // Veh's velocity
-	return ka * lacc + kv * (lv - v) + kd * (r - rref);
-}
-
 
 double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is deceleration, it will be negative)
 	double shift;
-	A2SimVehicle * Lveh = Veh->getLeader(shift); // or use getRealLeader
+	A2SimVehicle * Lveh;
+	Lveh = Veh->getLeader(shift); // or use getRealLeader
 	double aref, acc, aref_v, aref_d, vehMaxAcc, vehMaxDec, r;
-	aref_v = get_aref_v(Veh);
+	double v_intend = Veh->getFreeFlowSpeed();
+	double v = Veh->getSpeed(Veh->isUpdated());
+	aref_v = k * (v_intend - v);
 	if (Lveh != NULL) {
-		r = get_distance_to_leader(Veh, Lveh, shift);
-		aref_d = get_aref_d(Veh, Lveh, r);
+		double Xup, Vup, Xdw, Vdw;
+		double r = Veh->getGap(0.0, Lveh, shift, Xup, Vup, Xdw, Vdw);
+		double rsafe = pow(v, 2) / 2 * (1.0 / (-Lveh->getDeceleration()) - 1.0 / (-Veh->getDeceleration()));
+		double rsys = tsys * v;
+		double rref = max(rsafe, max(rsys, rmin));
+		double lacc = idToAcc[Lveh->getId()];
+		double lv = Lveh->getSpeed(Lveh->isUpdated());  // Lveh's velocity
+		aref_d = ka * lacc + kv * (lv - v) + kd * (r - rref);
 		aref = min(aref_v, aref_d);
 	}
 	else {
@@ -106,37 +82,36 @@ double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is dec
 	return acc;
 }
 
-void CAVCarFollowing(A2SimVehicle* vehicle, double& newpos, double& newspeed, double simStep) {
-	double speed = vehicle->getSpeed(vehicle->isUpdated());
-	double acc = get_acc(vehicle);
-	double old_acc = idToAcc[vehicle->getId()];
-	newspeed = speed + simStep / 2 * (old_acc + acc);
-	idToAcc[vehicle->getId()] = acc;
-	newpos = vehicle->getPosition(vehicle->isUpdated()) + simStep / 2 * (newspeed + speed);
-}
-
-
 bool behavioralModelParticular::evaluateCarFollowing(A2SimVehicle* vehicle, double& newpos, double& newspeed)
 {
+	double speed;
+	int vehId, vehType;
 	if (vehicle == NULL || vehicle->isFictitious()) return false;
-	int vehType = getAVState(vehicle);
-	// choose vehicle type
 	double simStep = getSimStep();
+	vehId = vehicle->getId();
+	vehType = idToVehType[vehId];
 	if (vehType == 0) {
+		vehType = getAVState(vehId);
+		idToVehType[vehId] = vehType;
+	}
+	
+	// choose vehicle type
+	speed = vehicle->getSpeed(vehicle->isUpdated());
+	if (vehType == 3) {
+		double acc = get_acc(vehicle);
+		double old_acc = 0;
+		if (idToAcc[vehId] != 0) {
+			old_acc = idToAcc[vehId];
+		}
+		idToAcc[vehId] = acc;
+		newspeed = speed + simStep / 2 * (old_acc + acc);
+	}
+	else {
 		// Default Gipps vehicle, do nothing
+		return false;
 	}
-	if (vehType == 1) {
-	}
-	if (vehType == 2) {
-		CAVCarFollowing(vehicle, newpos, newspeed, simStep);
-		return true;
-	}
-	return false;
-}
-
-double getRandNum() {
-	int curNum = rand() % 100;
-	return (double)curNum / 100.0;
+	newpos = vehicle->getPosition(vehicle->isUpdated()) + simStep / 2 * (newspeed + speed);
+	return true;
 }
 
 behavioralModelParticular::behavioralModelParticular() : A2BehavioralModel()
@@ -154,12 +129,9 @@ simVehicleParticular * behavioralModelParticular::arrivalNewVehicle(void *handle
 	return res;
 }
 
-
 void behavioralModelParticular::removedVehicle(void *handlerVehicle, unsigned short idHandler, A2SimVehicle * a2simVeh)
 {
-
 }
-
 
 
 
@@ -204,4 +176,3 @@ bool behavioralModelParticular::avoidCollision(A2SimVehicle *vehicle, A2SimVehic
 {
 	return false;
 }
-

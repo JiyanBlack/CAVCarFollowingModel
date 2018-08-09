@@ -15,8 +15,8 @@ gui_mode = False
 
 def addColumns():
     print "Initializing columns..."
-    gkveh = model.getType("GKVehicle")
-    gkveh.addColumn("GKSimVehicle::vehTypeState", "Vehcle Type", GKColumn.Int,
+    gkveh = model.getType("GKSimVehicle")
+    gkveh.addColumn("GKSimVehicle::vehTypeState", "Custom Vehicle Type", GKColumn.Int,
                     GKColumn.eExternal)
     print "Columns added!"
 
@@ -82,17 +82,17 @@ def runReplications(exp):
     for i in range(6):
         av_per = 0
         cav_per = 100 - i * 20
-        name = str(av_per) + "_" + str(cav_per)
+        name = "{0:03d}".format(av_per) + "_" + "{0:03d}".format(cav_per)
         replication = GKSystem.getSystem().newObject("GKReplication", model)
+        replication.setExperiment(exp)
         replication.setName(name)
         replication.setRandomSeed(seed)
         exp.addReplication(replication)
+        with open('percent.txt', 'w') as f:
+            f.write(name)
         print("Create new replication: " + name)
         simulator.addSimulationTask(
             GKSimulationTask(replication, GKReplication.eBatch))
-        with open('percent.txt', 'a') as f:
-            f.write(name)
-        print "Simulating replication: " + replication.getName()
         simulator.simulate()
 
 
@@ -108,8 +108,8 @@ def main(argv):
     # quit()
 
 
-if len(sys.argv) == 4:
-    gui_mode = True
+# if len(sys.argv) == 4:
+gui_mode = True
 if gui_mode:
     main(sys.argv)
 else:
