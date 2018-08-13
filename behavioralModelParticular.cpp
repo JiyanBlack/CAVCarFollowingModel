@@ -85,31 +85,18 @@ double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is dec
 bool behavioralModelParticular::evaluateCarFollowing(A2SimVehicle* vehicle, double& newpos, double& newspeed)
 {
 	double speed;
-	int vehId, vehType;
+	int vehId;
 	if (vehicle == NULL || vehicle->isFictitious()) return false;
 	double simStep = getSimStep();
-	vehId = vehicle->getId();
-	vehType = idToVehType[vehId];
-	if (vehType == 0) {
-		vehType = getAVState(vehId);
-		idToVehType[vehId] = vehType;
-	}
-	
 	// choose vehicle type
 	speed = vehicle->getSpeed(vehicle->isUpdated());
-	if (vehType == 3) {
-		double acc = get_acc(vehicle);
-		double old_acc = 0;
-		if (idToAcc[vehId] != 0) {
-			old_acc = idToAcc[vehId];
-		}
-		idToAcc[vehId] = acc;
-		newspeed = speed + simStep / 2 * (old_acc + acc);
+	double acc = get_acc(vehicle);
+	double old_acc = 0;
+	if (idToAcc[vehId] != 0) {
+		old_acc = idToAcc[vehId];
 	}
-	else {
-		// Default Gipps vehicle, do nothing
-		return false;
-	}
+	idToAcc[vehId] = acc;
+	newspeed = speed + simStep / 2 * (old_acc + acc);
 	newpos = vehicle->getPosition(vehicle->isUpdated()) + simStep / 2 * (newspeed + speed);
 	return true;
 }
