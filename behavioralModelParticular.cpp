@@ -64,6 +64,7 @@ double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is dec
 	aref_v = k * (v_intend - v);
 	if (Lveh != NULL) {
 		double Xup, Vup, Xdw, Vdw;
+		double dec = Veh->getDeceleration();
 		double r = Veh->getGap(0.0, Lveh, shift, Xup, Vup, Xdw, Vdw);
 		double rsafe = pow(v, 2) / 2 * (1.0 / (-Lveh->getDeceleration()) - 1.0 / (-Veh->getDeceleration()));
 		double rsys = tsys * v;
@@ -84,21 +85,7 @@ double get_acc(A2SimVehicle * Veh) { // calculate the acceleration (if it is dec
 
 bool behavioralModelParticular::evaluateCarFollowing(A2SimVehicle* vehicle, double& newpos, double& newspeed)
 {
-	double speed;
-	int vehId;
-	if (vehicle == NULL || vehicle->isFictitious()) return false;
-	double simStep = getSimStep();
-	// choose vehicle type
-	speed = vehicle->getSpeed(vehicle->isUpdated());
-	double acc = get_acc(vehicle);
-	double old_acc = 0;
-	if (idToAcc[vehId] != 0) {
-		old_acc = idToAcc[vehId];
-	}
-	idToAcc[vehId] = acc;
-	newspeed = speed + simStep / 2 * (old_acc + acc);
-	newpos = vehicle->getPosition(vehicle->isUpdated()) + simStep / 2 * (newspeed + speed);
-	return true;
+	return false;
 }
 
 behavioralModelParticular::behavioralModelParticular() : A2BehavioralModel()
@@ -146,7 +133,15 @@ bool behavioralModelParticular::isVehicleGivingWay(A2SimVehicle *vehicleGiveWay,
 
 double behavioralModelParticular::computeCarFollowingAccelerationComponentSpeed(A2SimVehicle *vehicle, double speed, double desiredSpeed, double simStep)
 {
-	return -1;
+	int vehId = vehicle->getId();
+	double acc = get_acc(vehicle);
+	double old_acc = 0;
+	if (idToAcc[vehId] != 0) {
+		old_acc = idToAcc[vehId];
+	}
+	idToAcc[vehId] = acc;
+	double newspeed = speed + simStep / 2 * (old_acc + acc);
+	return newspeed;
 }
 
 double behavioralModelParticular::computeCarFollowingDecelerationComponentSpeed(A2SimVehicle *vehicle, double Shift, A2SimVehicle *vehicleLeader, double ShiftLeader, bool controlDecelMax, bool aside, int time)

@@ -72,7 +72,7 @@ def AAPIEnterVehicle(idVeh, idsection):
     else:
         setAVState(idVeh, 0) # set as default veh
     parameters = AKIVehTrackedGetStaticInf(idVeh)
-    parameters.reactionTime = AKIGetSimulationStepTime()
+    parameters.reactionTime = AKIGetSimulationStepTime() # reaction time
     parameters.minDistanceVeh = 2.0
     parameters.headwayMin = 0.5
     parameters.maxAcceleration = 1.7
