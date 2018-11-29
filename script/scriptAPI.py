@@ -75,18 +75,15 @@ def AAPIEnterVehicle(idVeh, idsection):
     # print(parameters.headwayMin)
     if rnd_num < av:  # set as av
         setAVState(idVeh, 2)
-        parameters.headwayMin = 0.5
     elif rnd_num < (av + cav):  # set as cav
         setAVState(idVeh, 3)
-        parameters.headwayMin = 0.5
     else:
         setAVState(idVeh, 1)  # set as default veh
-        parameters.headwayMin = 2.5
         # parameters.reactionTime = 0.45
     parameters.minDistanceVeh = 2.0
-    parameters.maxAcceleration = 1.7
-    parameters.normalDeceleration = -2.0
-    parameters.maxDeceleration = -2.0
+    # parameters.maxAcceleration = 1.7
+    # parameters.normalDeceleration = -2.0
+    # parameters.maxDeceleration = -2.0
     AKIVehSetStaticInf(idVeh, parameters)
     # avState = getAVState(idVeh)
     # print(avState)

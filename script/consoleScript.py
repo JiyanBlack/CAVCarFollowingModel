@@ -14,11 +14,11 @@ gui_mode = False
 
 
 def addColumns():
-    print "Initializing columns..."
+    print("Initializing columns...")
     gkveh = model.getType("GKSimVehicle")
-    gkveh.addColumn("GKSimVehicle::vehTypeState", "Custom Vehicle Type", GKColumn.Int,
-                    GKColumn.eExternal)
-    print "Columns added!"
+    gkveh.addColumn("GKSimVehicle::vehTypeState", "Custom Vehicle Type",
+                    GKColumn.Int, GKColumn.eExternal)
+    print("Columns added!")
 
 
 def findExperiment():
@@ -93,6 +93,7 @@ def runReplications(exp):
         print("Create new replication: " + name)
         simulator.addSimulationTask(
             GKSimulationTask(replication, GKReplication.eBatch))
+        # simulator.addSimulationTask(GKSimulationTask(replication, GKReplication.eInteractiveAutoPlay))
         simulator.simulate()
 
 
@@ -101,7 +102,7 @@ def main(argv):
         loadModelGui(argv)
     else:
         loadModelConsole(argv)
-    addColumns()
+    # addColumns()
     exp = findExperiment()
     deleteAllReplications(exp)
     runReplications(exp)
