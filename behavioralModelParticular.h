@@ -14,6 +14,7 @@ class A2BEHAVIORALEXPORT behavioralModelParticular: public A2BehavioralModel
 private:
 	int seed;
 	double p_distance;
+	double time;
 public:
 	behavioralModelParticular();
 	~behavioralModelParticular();
@@ -24,9 +25,10 @@ public:
 	bool evaluateLaneChanging( A2SimVehicle *vehicle ,int threadId);
 	bool isVehicleGivingWay( A2SimVehicle *vehicleGiveWay, A2SimVehicle *vehiclePrio, yieldInfo *givewayInfo, int &Yield);
 	bool avoidCollision(A2SimVehicle *vehicle,A2SimVehicle *vehiclePre,double ShiftPre);
-	double computeCarFollowingAccelerationComponentSpeed(A2SimVehicle *vehicle,double VelActual,double VelDeseada, double RestoCiclo);
+	double computeCarFollowingAccelerationComponentSpeed(A2SimVehicle *vehicle,double CurrentSpeed,double TargetSpeed, double deltaRT);
 	double computeCarFollowingDecelerationComponentSpeed (A2SimVehicle *vehicle,double Shift,A2SimVehicle *vehicleLeader,double ShiftLeader,bool controlDecelMax=false, bool aside=false,int time=1);
-	double computeMinimumGap(A2SimVehicle *vehicleUp,A2SimVehicle *vehicleDown,bool ImprudentCase=false, bool VehicleIspVehDw=false, int time=1);
+	double computeCarFollowingDecelerationComponentSpeedCore(A2SimVehicle *vehicle, double speedVehicle, A2SimVehicle *vehicleLeader, double speedLeader, double gap, double leaderDecelerationEstimated);
+	double computeMinimumGap(A2SimVehicle *vehicleUp, A2SimVehicle *vehicleDown, bool VehicleIspVehDw = false, int time = 1);
 	int evaluateHasTime2CrossYellowState(A2SimVehicle *vehicle,double distance2StopLine);
 	int evaluateLaneSelectionDiscretionary(A2SimVehicle *vehicle,bool LeftLanePossible,bool RightLanePossible);
 };
