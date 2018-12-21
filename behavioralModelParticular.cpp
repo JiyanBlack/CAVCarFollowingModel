@@ -47,7 +47,8 @@ void setAVState(int id, int state) {
 }
 
 int getAVState(int id) {
-	if (idToVehType.count(id) == 1) return idToVehType[id];
+	return 2;
+	if (idToVehType[id] != 0) return idToVehType[id];
 	int GKid = ANGConnVehGetGKSimVehicleId(id);
 	int state = ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::vehTypeState")), GKid);
 	idToVehType[id] = state;
@@ -64,38 +65,47 @@ double get_distance_to_leader(A2SimVehicle * Veh, A2SimVehicle * Lveh, double sh
 }
 
 
-double get_acc(A2SimVehicle * Veh) {
+double get_deceleration(A2SimVehicle *vehicle, double v, A2SimVehicle *Lveh, double lv, double gap) {
 	// calculate the acceleration (if it is deceleration, it will be negative)
+	int idveh = vehicle->getId();
 
+	double aref, acc, aref_v, aref_d, vehMaxAcc, vehMaxDec;
+
+	double v_intend = vehicle->getFreeFlowSpeed();
+
+	aref_v = k * (v_intend - v);
+
+	double dec = vehicle->getDeceleration();
+	double rsafe = pow(v, 2) / 2 * (1.0 / (-Lveh->getDeceleration()) - 1.0 / (-vehicle->getDeceleration()));
+	double rsys = tsys * v;
+	double rref = max(rsafe, max(rsys, rmin));																//LC whats the point of two max functions?
+	double lacc = idToAcc[Lveh->getId()];
+	double r = gap + rmin;
+	aref_d = ka * lacc + kv * (lv - v) + kd * (r - rref);
+	aref = min(aref_v, aref_d);
+
+	vehMaxAcc = vehicle->getAcceleration(); // Veh's max acceleration
+	vehMaxDec = vehicle->getDeceleration(); // Veh's max deceleration
+	acc = max(min(aref, vehMaxAcc), vehMaxDec);
+	return acc;
+}
+
+double get_acceleration(A2SimVehicle *vehicle, double v, double v_intend) {
+	// calculate the acceleration (if it is deceleration, it will be negative)
 	double shift;
 	A2SimVehicle * Lveh;
-	Lveh = Veh->getLeader(shift); // or use getRealLeader
+	Lveh = vehicle->getLeader(shift); // or use getRealLeader
 
-	int idveh = Veh->getId();
-	int idLveh = Lveh->getId();
+	int idveh = vehicle->getId();
 
 	double aref, acc, aref_v, aref_d, vehMaxAcc, vehMaxDec, r;
-	//double v_intend = Veh->getFreeFlowSpeed();																	//LC is getFreeFlowSpeed a good option?																								
-	double freeFlowSpeed = Veh->getFreeFlowSpeed();
-	int turnId = Veh->getIdNextTurning();
-	void * turnSpeedAtt = ANGConnGetAttribute(AKIConvertFromAsciiString("GKTurning::speedAtt"));			//investigate memory leak issue
-	double nextTurnSpeed = ANGConnGetAttributeValueDouble(turnSpeedAtt, turnId) / 3.6;						//Divided by 3.6 to convert to m/s
-	double v_intend;
-	if (turnId == -1) {
-		v_intend = freeFlowSpeed;
-	}
-	else {
-		v_intend = min(freeFlowSpeed, nextTurnSpeed);
-	}
-
-
-	double v = Veh->getSpeed(Veh->isUpdated());
+	double r_shift;
 	aref_v = k * (v_intend - v);
 	if (Lveh != NULL) {
 		double Xup, Vup, Xdw, Vdw;
-		double dec = Veh->getDeceleration();
-		r = Veh->getGap(0.0, Lveh, shift, Xup, Vup, Xdw, Vdw);
-		double rsafe = pow(v, 2) / 2 * (1.0 / (-Lveh->getDeceleration()) - 1.0 / (-Veh->getDeceleration()));
+		double dec = vehicle->getDeceleration();
+		r = vehicle->getGap(0.0, Lveh, shift, Xup, Vup, Xdw, Vdw);
+		double rsafe = pow(v, 2) / 2 * (1.0 / (-Lveh->getDeceleration()) - 1.0 / (-vehicle->getDeceleration()));
 		double rsys = tsys * v;
 		double rref = max(rsafe, max(rsys, rmin));																//LC whats the point of two max functions?
 		double lacc = idToAcc[Lveh->getId()];
@@ -106,8 +116,8 @@ double get_acc(A2SimVehicle * Veh) {
 	else {
 		aref = aref_v;
 	}
-	vehMaxAcc = Veh->getAcceleration(); // Veh's max acceleration
-	vehMaxDec = Veh->getDeceleration(); // Veh's max deceleration
+	vehMaxAcc = vehicle->getAcceleration(); // Veh's max acceleration
+	vehMaxDec = vehicle->getDeceleration(); // Veh's max deceleration
 	acc = max(min(aref, vehMaxAcc), vehMaxDec);
 	return acc;
 }
@@ -136,79 +146,44 @@ void behavioralModelParticular::removedVehicle(void *handlerVehicle, unsigned sh
 
 }
 
+void assignVehParas(int idveh, int AVState) {
+	//set reaction time for HV AV CAV
+	if (AVState == 2) {
+		StaticInfVeh parameters = AKIVehGetStaticInf(idveh);
+		parameters.reactionTime = 0.45;
+		parameters.reactionTimeAtStop = 0.45;
+		parameters.reactionTimeAtTrafficLight = 0.45;
+		parameters.minDistanceVeh = rmin;
+		AKIVehSetStaticInf(idveh, parameters);
+	}
+	else {
+		StaticInfVeh parameters = AKIVehGetStaticInf(idveh);
+		parameters.reactionTime = 0.9;
+		parameters.reactionTimeAtStop = 0.9;
+		parameters.reactionTimeAtTrafficLight = 0.9;
+		AKIVehSetStaticInf(idveh, parameters);
+	}
+}
+
+
 bool behavioralModelParticular::evaluateCarFollowing(A2SimVehicle *vehicle, double &newpos, double &newspeed)
 {
 	testSDKActive();
 
 	int idveh = vehicle->getId();
-
-
 	int AVState = getAVState(idveh);
 
-// default values:
-	//bool leftLCR = false;
-	//bool rightLCR = false;
-	//int applyCoopWithVeh = 0;
-	//int receiveCoopFromVeh = 0;
-	//int tryLCBehindVeh = 0;
+	newspeed = vehicle->getAimsunCarFollowingSpeed();
+	double currentSpeed = vehicle->getSpeed(vehicle->isUpdated());
+	double increment = 0.0;
+	double realAcc = (newspeed - currentSpeed) / getSimStep();
+	idToAcc[idveh] = realAcc;
 
-	//Vehicle attributes
-	int GKid = ANGConnVehGetGKSimVehicleId(idveh);				//Can use Yans getAVState() function or simply write code here
-	bool leftLCR = ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::leftLaneChangingRequestedForCooperation")), GKid);
-	bool rightLCR = ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::rightLaneChangingRequestedForCooperation")), GKid);
-	int applyCoopWithVeh = ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::applyingCooperationWithVehicle")), GKid);
-	int receiveCoopFromVeh = ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::receivingCooperationFromVehicle")), GKid);
-	int tryLCBehindVeh = ANGConnGetAttributeValueInt(ANGConnGetAttribute(AKIConvertFromAsciiString("GKSimVehicle::tryingToChangeLaneBehindVehicle")), GKid);
-	//Need to consider similiar method to handle stop signs 
-
-	double acc = get_acc(vehicle);
-	double old_acc = 0;
-	if (idToAcc[idveh] != 0) {
-		old_acc = idToAcc[idveh];
-	}
-	idToAcc[idveh] = acc;
-
-	double speed = vehicle->getSpeed(vehicle->isUpdated());
-
-	// address the stopped vehicle issue:
-	// if speed is low, use default model
-	if (speed < 1.0) return false;
-
-	//Test whether AV needs to become HV and apply "getAimsunCarFollowingSpeed()"
-	//If applying/recieving lane changing cooperation attributes
-	bool AV2HV = false;
-	if (leftLCR == true || rightLCR == true || applyCoopWithVeh != 0 || receiveCoopFromVeh != 0 || tryLCBehindVeh != 0) {
-		AV2HV = true;
-	}
-
-	//If on an on-ramp and less than 250m till end
-	int obstacle = vehicle->getObstacleType();
-	double distObst = vehicle->getDistance2Obstacle();
-	bool onRamp = false;
-	if (obstacle == 9 && distObst <= 250) {											//250 m is arbitrary value
-		onRamp = true;
-	}
-
-	//Apply CAV model or Aimsun Gipps model
-	if (AVState == 2 && AV2HV == false && onRamp == false) {
-		StaticInfVeh parameters = AKIVehGetStaticInf(idveh);
-		parameters.reactionTime = 0.45;
-		AKIVehSetStaticInf(idveh, parameters);
-		newspeed = max(0., speed + (getSimStep() / 2) * (old_acc + acc));
-	}
-	else {
-		StaticInfVeh parameters = AKIVehGetStaticInf(idveh);
-		parameters.reactionTime = 0.9;
-		AKIVehSetStaticInf(idveh, parameters);
-		newspeed = vehicle->getAimsunCarFollowingSpeed();
-	}
-
-	double increment = 0;
-	if (newspeed >= vehicle->getSpeed(vehicle->isUpdated())) {
+	if (newspeed >= currentSpeed) {
 		increment = newspeed * getSimStep();
 	}
 	else {
-		increment = 0.5*(newspeed + vehicle->getSpeed(vehicle->isUpdated()))*getSimStep();
+		increment = 0.5*(newspeed + currentSpeed)*getSimStep();
 	}
 	newpos = vehicle->getPosition(vehicle->isUpdated()) + increment;
 	return true;
@@ -236,18 +211,37 @@ bool behavioralModelParticular::isVehicleGivingWay(A2SimVehicle *vehicleGiveWay,
 	return false;
 }
 
-double behavioralModelParticular::computeCarFollowingAccelerationComponentSpeed(A2SimVehicle *vehicle, double CurrentSpeed, double TargetSpeed, double deltaRT)
+double behavioralModelParticular::computeCarFollowingAccelerationComponentSpeed(A2SimVehicle *vehicle, double currentSpeed, double targetSpeed, double simStep)
 {
-	return -1;
+	int idveh = vehicle->getId();
+	int AVState = getAVState(idveh);
+
+	if (AVState != 2) return -1;
+
+	double acc = get_acceleration(vehicle, currentSpeed, targetSpeed);
+
+	double newspeed = max(0., currentSpeed + simStep * acc);
+	newspeed = min(targetSpeed, newspeed);
+
+	return newspeed;
 }
 
 double behavioralModelParticular::computeCarFollowingDecelerationComponentSpeed(A2SimVehicle *vehicle, double Shift, A2SimVehicle *vehicleLeader, double ShiftLeader, bool controlDecelMax, bool aside, int time)
 {
 	return -1;
 }
-double behavioralModelParticular::computeCarFollowingDecelerationComponentSpeedCore(A2SimVehicle *vehicle, double speedVehicle, A2SimVehicle *vehicleLeader, double speedLeader, double gap, double leaderDecelerationEstimated)
+double behavioralModelParticular::computeCarFollowingDecelerationComponentSpeedCore(A2SimVehicle *vehicle, double currentSpeed, A2SimVehicle *vehicleLeader, double leaderSpeed, double gap, double leaderDecelerationEstimated)
 {
-	return -1;
+	int idveh = vehicle->getId();
+	int AVState = getAVState(idveh);
+
+	if (AVState != 2) return -1;
+
+	double acc = get_deceleration(vehicle, currentSpeed, vehicleLeader, leaderSpeed, gap);
+
+	double newspeed = max(0., currentSpeed + getSimStep() * acc);
+
+	return newspeed;
 }
 double behavioralModelParticular::computeMinimumGap(A2SimVehicle *vehicleUp, A2SimVehicle *vehicleDown, bool VehicleIspVehDw, int time)
 {

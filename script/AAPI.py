@@ -189,6 +189,54 @@ def intArray_frompointer(*args):
   return _AAPI.intArray_frompointer(*args)
 intArray_frompointer = _AAPI.intArray_frompointer
 
+class doubleArray(_object):
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, doubleArray, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, doubleArray, name)
+    __repr__ = _swig_repr
+    def __init__(self, *args): 
+        this = _AAPI.new_doubleArray(*args)
+        try: self.this.append(this)
+        except: self.this = this
+    __swig_destroy__ = _AAPI.delete_doubleArray
+    __del__ = lambda self : None;
+    def __getitem__(self, *args): return _AAPI.doubleArray___getitem__(self, *args)
+    def __setitem__(self, *args): return _AAPI.doubleArray___setitem__(self, *args)
+    def cast(self): return _AAPI.doubleArray_cast(self)
+    __swig_getmethods__["frompointer"] = lambda x: _AAPI.doubleArray_frompointer
+    if _newclass:frompointer = staticmethod(_AAPI.doubleArray_frompointer)
+doubleArray_swigregister = _AAPI.doubleArray_swigregister
+doubleArray_swigregister(doubleArray)
+
+def doubleArray_frompointer(*args):
+  return _AAPI.doubleArray_frompointer(*args)
+doubleArray_frompointer = _AAPI.doubleArray_frompointer
+
+class VehPosArray(_object):
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, VehPosArray, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, VehPosArray, name)
+    __repr__ = _swig_repr
+    def __init__(self, *args): 
+        this = _AAPI.new_VehPosArray(*args)
+        try: self.this.append(this)
+        except: self.this = this
+    __swig_destroy__ = _AAPI.delete_VehPosArray
+    __del__ = lambda self : None;
+    def __getitem__(self, *args): return _AAPI.VehPosArray___getitem__(self, *args)
+    def __setitem__(self, *args): return _AAPI.VehPosArray___setitem__(self, *args)
+    def cast(self): return _AAPI.VehPosArray_cast(self)
+    __swig_getmethods__["frompointer"] = lambda x: _AAPI.VehPosArray_frompointer
+    if _newclass:frompointer = staticmethod(_AAPI.VehPosArray_frompointer)
+VehPosArray_swigregister = _AAPI.VehPosArray_swigregister
+VehPosArray_swigregister(VehPosArray)
+
+def VehPosArray_frompointer(*args):
+  return _AAPI.VehPosArray_frompointer(*args)
+VehPosArray_frompointer = _AAPI.VehPosArray_frompointer
+
 
 def AKIGetNbScenarioActions():
   return _AAPI.AKIGetNbScenarioActions()
@@ -210,9 +258,17 @@ def AKIActionAddSpeedAction(*args):
   return _AAPI.AKIActionAddSpeedAction(*args)
 AKIActionAddSpeedAction = _AAPI.AKIActionAddSpeedAction
 
+def AKIActionAddSpeedActionByID(*args):
+  return _AAPI.AKIActionAddSpeedActionByID(*args)
+AKIActionAddSpeedActionByID = _AAPI.AKIActionAddSpeedActionByID
+
 def AKIActionAddDetailedSpeedAction(*args):
   return _AAPI.AKIActionAddDetailedSpeedAction(*args)
 AKIActionAddDetailedSpeedAction = _AAPI.AKIActionAddDetailedSpeedAction
+
+def AKIActionAddDetailedSpeedActionByID(*args):
+  return _AAPI.AKIActionAddDetailedSpeedActionByID(*args)
+AKIActionAddDetailedSpeedActionByID = _AAPI.AKIActionAddDetailedSpeedActionByID
 
 def AKIActionCloseLaneAction(*args):
   return _AAPI.AKIActionCloseLaneAction(*args)
@@ -246,6 +302,10 @@ def AKIActionDisableReservedLaneAction(*args):
   return _AAPI.AKIActionDisableReservedLaneAction(*args)
 AKIActionDisableReservedLaneAction = _AAPI.AKIActionDisableReservedLaneAction
 
+def AKIActionAddEnRouteAssignmentAction(*args):
+  return _AAPI.AKIActionAddEnRouteAssignmentAction(*args)
+AKIActionAddEnRouteAssignmentAction = _AAPI.AKIActionAddEnRouteAssignmentAction
+
 def AKIActionCongestionPricingODAction(*args):
   return _AAPI.AKIActionCongestionPricingODAction(*args)
 AKIActionCongestionPricingODAction = _AAPI.AKIActionCongestionPricingODAction
@@ -277,6 +337,10 @@ AKIActionAddNextSubPathResultAction = _AAPI.AKIActionAddNextSubPathResultAction
 def AKIActionAddNextSubPathPTAction(*args):
   return _AAPI.AKIActionAddNextSubPathPTAction(*args)
 AKIActionAddNextSubPathPTAction = _AAPI.AKIActionAddNextSubPathPTAction
+
+def AKIActionAddNextSubPathAndStopsPTAction(*args):
+  return _AAPI.AKIActionAddNextSubPathAndStopsPTAction(*args)
+AKIActionAddNextSubPathAndStopsPTAction = _AAPI.AKIActionAddNextSubPathAndStopsPTAction
 
 def AKIActionAddCloseTurningODAction(*args):
   return _AAPI.AKIActionAddCloseTurningODAction(*args)
@@ -1364,6 +1428,12 @@ class A2KTurnBehaviourParam(_object):
     __swig_setmethods__["yellowBoxSpeed"] = _AAPI.A2KTurnBehaviourParam_yellowBoxSpeed_set
     __swig_getmethods__["yellowBoxSpeed"] = _AAPI.A2KTurnBehaviourParam_yellowBoxSpeed_get
     if _newclass:yellowBoxSpeed = _swig_property(_AAPI.A2KTurnBehaviourParam_yellowBoxSpeed_get, _AAPI.A2KTurnBehaviourParam_yellowBoxSpeed_set)
+    __swig_setmethods__["distanceZone1"] = _AAPI.A2KTurnBehaviourParam_distanceZone1_set
+    __swig_getmethods__["distanceZone1"] = _AAPI.A2KTurnBehaviourParam_distanceZone1_get
+    if _newclass:distanceZone1 = _swig_property(_AAPI.A2KTurnBehaviourParam_distanceZone1_get, _AAPI.A2KTurnBehaviourParam_distanceZone1_set)
+    __swig_setmethods__["distanceZone2"] = _AAPI.A2KTurnBehaviourParam_distanceZone2_set
+    __swig_getmethods__["distanceZone2"] = _AAPI.A2KTurnBehaviourParam_distanceZone2_get
+    if _newclass:distanceZone2 = _swig_property(_AAPI.A2KTurnBehaviourParam_distanceZone2_get, _AAPI.A2KTurnBehaviourParam_distanceZone2_set)
     def __init__(self): 
         this = _AAPI.new_A2KTurnBehaviourParam()
         try: self.this.append(this)
@@ -2106,6 +2176,10 @@ def AKIEstGetParcialStatisticsSection(*args):
   return _AAPI.AKIEstGetParcialStatisticsSection(*args)
 AKIEstGetParcialStatisticsSection = _AAPI.AKIEstGetParcialStatisticsSection
 
+def AKIEstGetCurrentStatisticsSection(*args):
+  return _AAPI.AKIEstGetCurrentStatisticsSection(*args)
+AKIEstGetCurrentStatisticsSection = _AAPI.AKIEstGetCurrentStatisticsSection
+
 def AKIEstGetGlobalStatisticsSectionLane(*args):
   return _AAPI.AKIEstGetGlobalStatisticsSectionLane(*args)
 AKIEstGetGlobalStatisticsSectionLane = _AAPI.AKIEstGetGlobalStatisticsSectionLane
@@ -2113,6 +2187,10 @@ AKIEstGetGlobalStatisticsSectionLane = _AAPI.AKIEstGetGlobalStatisticsSectionLan
 def AKIEstGetParcialStatisticsSectionLane(*args):
   return _AAPI.AKIEstGetParcialStatisticsSectionLane(*args)
 AKIEstGetParcialStatisticsSectionLane = _AAPI.AKIEstGetParcialStatisticsSectionLane
+
+def AKIEstGetCurrentStatisticsSectionLane(*args):
+  return _AAPI.AKIEstGetCurrentStatisticsSectionLane(*args)
+AKIEstGetCurrentStatisticsSectionLane = _AAPI.AKIEstGetCurrentStatisticsSectionLane
 
 def AKIEstGetGlobalStatisticsTurning(*args):
   return _AAPI.AKIEstGetGlobalStatisticsTurning(*args)
@@ -2122,9 +2200,17 @@ def AKIEstGetParcialStatisticsTurning(*args):
   return _AAPI.AKIEstGetParcialStatisticsTurning(*args)
 AKIEstGetParcialStatisticsTurning = _AAPI.AKIEstGetParcialStatisticsTurning
 
+def AKIEstGetCurrentStatisticsTurning(*args):
+  return _AAPI.AKIEstGetCurrentStatisticsTurning(*args)
+AKIEstGetCurrentStatisticsTurning = _AAPI.AKIEstGetCurrentStatisticsTurning
+
 def AKIEstGetGlobalStatisticsLink(*args):
   return _AAPI.AKIEstGetGlobalStatisticsLink(*args)
 AKIEstGetGlobalStatisticsLink = _AAPI.AKIEstGetGlobalStatisticsLink
+
+def AKIEstGetCurrentStatisticsLink(*args):
+  return _AAPI.AKIEstGetCurrentStatisticsLink(*args)
+AKIEstGetCurrentStatisticsLink = _AAPI.AKIEstGetCurrentStatisticsLink
 
 def AKIEstGetParcialStatisticsLink(*args):
   return _AAPI.AKIEstGetParcialStatisticsLink(*args)
@@ -2194,6 +2280,10 @@ def AKIEstGetParcialStatisticsSectionFuelCons(*args):
   return _AAPI.AKIEstGetParcialStatisticsSectionFuelCons(*args)
 AKIEstGetParcialStatisticsSectionFuelCons = _AAPI.AKIEstGetParcialStatisticsSectionFuelCons
 
+def AKIEstGetCurrentStatisticsSectionFuelCons(*args):
+  return _AAPI.AKIEstGetCurrentStatisticsSectionFuelCons(*args)
+AKIEstGetCurrentStatisticsSectionFuelCons = _AAPI.AKIEstGetCurrentStatisticsSectionFuelCons
+
 def AKIEstGetGlobalStatisticsTurningFuelCons(*args):
   return _AAPI.AKIEstGetGlobalStatisticsTurningFuelCons(*args)
 AKIEstGetGlobalStatisticsTurningFuelCons = _AAPI.AKIEstGetGlobalStatisticsTurningFuelCons
@@ -2202,6 +2292,10 @@ def AKIEstGetParcialStatisticsTurningFuelCons(*args):
   return _AAPI.AKIEstGetParcialStatisticsTurningFuelCons(*args)
 AKIEstGetParcialStatisticsTurningFuelCons = _AAPI.AKIEstGetParcialStatisticsTurningFuelCons
 
+def AKIEstGetCurrentStatisticsTurningFuelCons(*args):
+  return _AAPI.AKIEstGetCurrentStatisticsTurningFuelCons(*args)
+AKIEstGetCurrentStatisticsTurningFuelCons = _AAPI.AKIEstGetCurrentStatisticsTurningFuelCons
+
 def AKIEstGetGlobalStatisticsLinkFuelCons(*args):
   return _AAPI.AKIEstGetGlobalStatisticsLinkFuelCons(*args)
 AKIEstGetGlobalStatisticsLinkFuelCons = _AAPI.AKIEstGetGlobalStatisticsLinkFuelCons
@@ -2209,6 +2303,10 @@ AKIEstGetGlobalStatisticsLinkFuelCons = _AAPI.AKIEstGetGlobalStatisticsLinkFuelC
 def AKIEstGetParcialStatisticsLinkFuelCons(*args):
   return _AAPI.AKIEstGetParcialStatisticsLinkFuelCons(*args)
 AKIEstGetParcialStatisticsLinkFuelCons = _AAPI.AKIEstGetParcialStatisticsLinkFuelCons
+
+def AKIEstGetCurrentStatisticsLinkFuelCons(*args):
+  return _AAPI.AKIEstGetCurrentStatisticsLinkFuelCons(*args)
+AKIEstGetCurrentStatisticsLinkFuelCons = _AAPI.AKIEstGetCurrentStatisticsLinkFuelCons
 
 def AKIEstGetGlobalStatisticsSystemFuelCons(*args):
   return _AAPI.AKIEstGetGlobalStatisticsSystemFuelCons(*args)
@@ -2250,6 +2348,10 @@ def AKIEstGetParcialStatisticsSectionPollution(*args):
   return _AAPI.AKIEstGetParcialStatisticsSectionPollution(*args)
 AKIEstGetParcialStatisticsSectionPollution = _AAPI.AKIEstGetParcialStatisticsSectionPollution
 
+def AKIEstGetCurrentStatisticsSectionPollution(*args):
+  return _AAPI.AKIEstGetCurrentStatisticsSectionPollution(*args)
+AKIEstGetCurrentStatisticsSectionPollution = _AAPI.AKIEstGetCurrentStatisticsSectionPollution
+
 def AKIEstGetGlobalStatisticsTurningPollution(*args):
   return _AAPI.AKIEstGetGlobalStatisticsTurningPollution(*args)
 AKIEstGetGlobalStatisticsTurningPollution = _AAPI.AKIEstGetGlobalStatisticsTurningPollution
@@ -2258,6 +2360,10 @@ def AKIEstGetParcialStatisticsTurningPollution(*args):
   return _AAPI.AKIEstGetParcialStatisticsTurningPollution(*args)
 AKIEstGetParcialStatisticsTurningPollution = _AAPI.AKIEstGetParcialStatisticsTurningPollution
 
+def AKIEstGetCurrentStatisticsTurningPollution(*args):
+  return _AAPI.AKIEstGetCurrentStatisticsTurningPollution(*args)
+AKIEstGetCurrentStatisticsTurningPollution = _AAPI.AKIEstGetCurrentStatisticsTurningPollution
+
 def AKIEstGetGlobalStatisticsLinkPollution(*args):
   return _AAPI.AKIEstGetGlobalStatisticsLinkPollution(*args)
 AKIEstGetGlobalStatisticsLinkPollution = _AAPI.AKIEstGetGlobalStatisticsLinkPollution
@@ -2265,6 +2371,10 @@ AKIEstGetGlobalStatisticsLinkPollution = _AAPI.AKIEstGetGlobalStatisticsLinkPoll
 def AKIEstGetParcialStatisticsLinkPollution(*args):
   return _AAPI.AKIEstGetParcialStatisticsLinkPollution(*args)
 AKIEstGetParcialStatisticsLinkPollution = _AAPI.AKIEstGetParcialStatisticsLinkPollution
+
+def AKIEstGetCurrentStatisticsLinkPollution(*args):
+  return _AAPI.AKIEstGetCurrentStatisticsLinkPollution(*args)
+AKIEstGetCurrentStatisticsLinkPollution = _AAPI.AKIEstGetCurrentStatisticsLinkPollution
 
 def AKIEstGetGlobalStatisticsSystemPollution(*args):
   return _AAPI.AKIEstGetGlobalStatisticsSystemPollution(*args)
@@ -2700,6 +2810,10 @@ def AKIPTVehModifyStopTime(*args):
   return _AAPI.AKIPTVehModifyStopTime(*args)
 AKIPTVehModifyStopTime = _AAPI.AKIPTVehModifyStopTime
 
+def AKIPTVehReroute(*args):
+  return _AAPI.AKIPTVehReroute(*args)
+AKIPTVehReroute = _AAPI.AKIPTVehReroute
+
 def AKIPTVehGetStaticInf(*args):
   return _AAPI.AKIPTVehGetStaticInf(*args)
 AKIPTVehGetStaticInf = _AAPI.AKIPTVehGetStaticInf
@@ -3030,6 +3144,10 @@ def ECIGetCurrentPhaseInRing(*args):
   return _AAPI.ECIGetCurrentPhaseInRing(*args)
 ECIGetCurrentPhaseInRing = _AAPI.ECIGetCurrentPhaseInRing
 
+def ECIGetCurrentTimeInCycle(*args):
+  return _AAPI.ECIGetCurrentTimeInCycle(*args)
+ECIGetCurrentTimeInCycle = _AAPI.ECIGetCurrentTimeInCycle
+
 def ECIGetNumberPhases(*args):
   return _AAPI.ECIGetNumberPhases(*args)
 ECIGetNumberPhases = _AAPI.ECIGetNumberPhases
@@ -3122,6 +3240,10 @@ def ECIGetSignalGroupPhaseofJunction(*args):
   return _AAPI.ECIGetSignalGroupPhaseofJunction(*args)
 ECIGetSignalGroupPhaseofJunction = _AAPI.ECIGetSignalGroupPhaseofJunction
 
+def ECIChangeColorSignalGroupPhaseofJunction(*args):
+  return _AAPI.ECIChangeColorSignalGroupPhaseofJunction(*args)
+ECIChangeColorSignalGroupPhaseofJunction = _AAPI.ECIChangeColorSignalGroupPhaseofJunction
+
 def ECIGetControlType(*args):
   return _AAPI.ECIGetControlType(*args)
 ECIGetControlType = _AAPI.ECIGetControlType
@@ -3145,6 +3267,10 @@ ECIEnableEvents = _AAPI.ECIEnableEvents
 def ECIEnableEventsActivatingPhase(*args):
   return _AAPI.ECIEnableEventsActivatingPhase(*args)
 ECIEnableEventsActivatingPhase = _AAPI.ECIEnableEventsActivatingPhase
+
+def ECIIsEventsEnabled(*args):
+  return _AAPI.ECIIsEventsEnabled(*args)
+ECIIsEventsEnabled = _AAPI.ECIIsEventsEnabled
 
 def ECIChangeDirectPhase(*args):
   return _AAPI.ECIChangeDirectPhase(*args)
@@ -3185,6 +3311,10 @@ ECIGetTypeControlofJunction = _AAPI.ECIGetTypeControlofJunction
 def ECIGetNbPhasesofJunction(*args):
   return _AAPI.ECIGetNbPhasesofJunction(*args)
 ECIGetNbPhasesofJunction = _AAPI.ECIGetNbPhasesofJunction
+
+def ECIGetControlCycleofJunction(*args):
+  return _AAPI.ECIGetControlCycleofJunction(*args)
+ECIGetControlCycleofJunction = _AAPI.ECIGetControlCycleofJunction
 
 def ECIGetNbRingsJunction(*args):
   return _AAPI.ECIGetNbRingsJunction(*args)
